@@ -1,5 +1,7 @@
 #!/bin/bash
 # -*- coding: utf-8 -*-
+#SOURCES
+source ./users_source.sh
 mainFuntion=main
 # Defino la función
 barra="========================================"
@@ -65,20 +67,20 @@ function tempUser {
 	echo -n ${arr[2]}
 	read pass
 	echo -n ${arr[3]}
-	read duration
-	if [ $duration = "" ] ; then
-		$duration=30
+	read days
+	if [ $days = "" ] ; then
+		$days=30
 		echo "Duración establecida en 30 minutos por defecto"
 		sleep 2s
 	fi
-	CreateUser $name $pass $duration
+	CreateUser $name $pass $days
 }
 
 # CreateUser COMMIT
 function CreateUser {
 	name=$1
 	pass=$2
-	duration=$3
+	days=$3
 	useradd -M -s /bin/false $name &&
 #	(echo $pass; echo $pass)|passwd $name #2>/dev/null
 	(echo $pass; echo $pass)|passwd $name 			 ||
@@ -111,10 +113,13 @@ function newUser {
 	echo -n ${arr[2]}
 	read pass
 	echo -n ${arr[3]}
-	read duration
+	read days
 	echo -n ${arr[4]}
 	read max_logins
-	create_user $name $pass $duration $max_logins
+	createUser $name
+	setPwd $name $pass
+	setDays $name $days
+	setLogins $max_logins
 }
 
 
@@ -125,7 +130,7 @@ function create_user {
 		#echo "Usuario creado!"
 		echo ${arr[1]}$name
 		echo ${arr[2]}$pass
-		echo ${arr[3]}$duration
+		echo ${arr[3]}$days
 		echo ${arr[4]}$max_logins
 		echo ${arr[5]}"<IP DE MI SERVIDOR>"
 		echo -n "Presione enter para continuar"
