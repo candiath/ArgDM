@@ -8,30 +8,59 @@
 
 function listarOnlines {
 local data=( `ps aux | grep -i dropbear | awk '{print $2}'`);
-declare -A connections
-
 for PID in "${data[@]}"
 do
 local userlist=$(cat /var/log/auth.log | grep -i dropbear | grep -i "Password auth succeeded" | grep "dropbear\[$PID\]" | awk -F"'" '{print $2}')
 # -n significa que la longitud del string no es cero
-        # Sumar
-        for item in ${userlist}; do
-                if [[ -n "$item"  ]]; then #Verificar si es necesario este paso!!!!!!!!!!!!!!!!
-                        echo "ITEM ES $item"
-                        [ -n "${connections[$item]}" ] && connections[$item]=$((${connections[$item]} + 1)) || connections[$item]=1
-                fi
-        done
-done
 
-echo "El número de usuarios conectados es de ${#connections[*]}."
-echo "======================================"
-espacio=10
-for index in ${!connections[*]}; do
-        printf "%-${espacio}s%s\n" $index ${connections[$index]}"/?"
+# Sumar
+declare -A connections
+for item in ${userlist}; do
+        if [[ -n "$item"  ]]; then #Verificar si es necesario este paso!!!!!!!!!!!!!!!!
+                [ -n "${connections[$item]}" ] && connections[$item]=$((${connections[$item]} + 1)) || connections[$item]=1
+        fi
 done
+done
+echo "Check ==> He recibido "$# " parámetros, que son: "$*
+case $1 in
+        1 )
+        imprimirLogins;;
+        2 )
+        echo ${#connections[*]};;
+        3 )
+        countLogins;;
+        4 )
+        imprimirLogins
+        countLogins;;
+
+esac
+
 }
 
-listarOnlines
+
+function imprimirLogins {
+        
+        echo "El número de cuentas conectadas es de ${#connections[*]}."
+        echo "======================================"
+        espacio=10
+        for index in ${!connections[*]}; do
+                printf "%-${espacio}s%s\n" $index ${connections[$index]}"/?"
+        done
+}
+
+function countLogins {
+        for item in ${connections[*]}; do
+                sum=$(($sum + $item))
+        done
+        echo "Total de logins es $sum"
+}
+
+
+listarOnlines 4
+
+
+
+
 
 function createUser() {
         #Validación pendiente del comando!!!
