@@ -3,6 +3,47 @@
 # Useful commands:
 #	chage -l $user
 # https://www.cyberciti.biz/faq/linux-howto-check-user-password-expiration-date-and-time/
+
+
+function listarOnlines {
+data=( `ps aux | grep -i dropbear | awk '{print $2}'`);
+
+declare -A connections
+        
+echo -e "Calculando...\n"
+for PID in "${data[@]}"
+do
+		#username=$(cat /var/log/auth.log | grep -i dropbear | grep -i "Password auth succeeded" | grep "dropbear\[$PID\]" | awk '{print $10}')
+		username=$(cat /var/log/auth.log | grep -i dropbear | grep -i "Password auth succeeded" | grep "dropbear\[$PID\]" | awk -F "'" '{print $2}')
+		# [ "$aux" = "" ]
+		# -n significa que la longitud del string no es cero
+
+		# Sumar
+		if [[ -n "$username"  ]]; then [ -n "${connections[$username]}" ] && connections[$username]=$((${connections[$username]} + 1)) || connections[$username]=1; fi
+
+		#echo "check $PID";
+        #NUM1=`cat /var/log/auth.log | grep -i dropbear | grep -i "Password auth succeeded" | grep "dropbear\[$PID\]" | wc -l`;
+        #echo "el cat es= "$(cat /var/log/auth.log | grep -i dropbear | grep -i "Password auth succeeded" | grep "dropbear\[$PID\]")
+        #echo "Num es: $NUM1"
+        #USER=`cat /var/log/auth.log | grep -i dropbear | grep -i "Password auth succeeded" | grep "dropbear\[$PID\]" | awk '{print $10}'`;
+        #IP=`cat /var/log/auth.log | grep -i dropbear | grep -i "Password auth succeeded" | grep "dropbear\[$PID\]" | awk '{print $12}'`;
+done
+
+echo -e "Calculado!\n"
+echo "El número de usuarios conectados es de ${#connections[*]}."
+echo "======================================"
+espacio=10
+
+
+
+for index in ${!connections[*]}; do
+	#echo "$index - ${connections[$index]}\n"
+	printf "%-${espacio}s%s\n" $index ${connections[$index]}"/?"
+done
+sleep 2s
+}
+
+
 function createUser(){
 	#Validación pendiente del comando!!!
 	useradd -M -s /bin/false $1 ||
@@ -35,3 +76,4 @@ function setLogins(){
 	################################################
 	
 }
+
