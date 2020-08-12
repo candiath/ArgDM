@@ -87,7 +87,20 @@ function setDays() {
         usermod -e $expDate $1
 }
 
-#function setLogins() {
+function setLogins() {
+	dir=/root/ArgDM
+	# $1 = name
+	# $2 = limit
+
+	grep -v "$1" $dir/limits > $dir/limits
+	echo "$1:$2" >> $dir/limits 
+
+
+
+
+
+
+
         # Active logins:
         # ps -u $usur |grep sshd |wc -l
         #
@@ -101,7 +114,7 @@ function setDays() {
         # uno                           dosroot@VPS16:~#
         ################################################
 
-#}
+}
 
 function limiter() {
   PIDs=(`ps aux | grep -i dropbear | awk '{print $2}'`)
@@ -119,6 +132,7 @@ function limiter() {
                 [ -n "${connections[$item]}" ] && connections[$item]=$((${connections[$item]} + 1)) || connections[$item]=1
         fi
     done
+  done
     # Leo de disco un array asociativo de usuarios y limite de logins
     # Comparo ese array con $connections
     # Busco los PIDs mediante grep de usuarios desde /tmp/monitor
