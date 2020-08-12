@@ -20,7 +20,7 @@ function users_mgr()
 	echo -e "[4] !Crear prueba"
 	echo -e "[5] Listar todos los usuarios"
 	echo -e "[6] Listar usuarios conectados"
-#	echo -e "[7]"
+	echo -e "[7] TEST!"
 #	echo -e "[8]"
 #	echo -e "[9]"
 #	echo -e "[10]"
@@ -47,6 +47,9 @@ function users_mgr()
 		sleep 1s
 		;;
 		6 )
+		monitorear
+		;;
+		7 )
 		listarOnlines
 		;;
 		0 )
@@ -57,43 +60,8 @@ function users_mgr()
 done
 }
 
-function listarOnlines {
-data=( `ps aux | grep -i dropbear | awk '{print $2}'`);
-
-declare -A connections
-        
-echo -e "Calculando...\n"
-for PID in "${data[@]}"
-do
-		#username=$(cat /var/log/auth.log | grep -i dropbear | grep -i "Password auth succeeded" | grep "dropbear\[$PID\]" | awk '{print $10}')
-		username=$(cat /var/log/auth.log | grep -i dropbear | grep -i "Password auth succeeded" | grep "dropbear\[$PID\]" | awk -F "'" '{print $2}')
-		# [ "$aux" = "" ]
-		# -n significa que la longitud del string no es cero
-
-		# Sumar
-		if [[ -n "$username"  ]]; then [ -n "${connections[$username]}" ] && connections[$username]=$((${connections[$username]} + 1)) || connections[$username]=1; fi
-
-		#echo "check $PID";
-        #NUM1=`cat /var/log/auth.log | grep -i dropbear | grep -i "Password auth succeeded" | grep "dropbear\[$PID\]" | wc -l`;
-        #echo "el cat es= "$(cat /var/log/auth.log | grep -i dropbear | grep -i "Password auth succeeded" | grep "dropbear\[$PID\]")
-        #echo "Num es: $NUM1"
-        #USER=`cat /var/log/auth.log | grep -i dropbear | grep -i "Password auth succeeded" | grep "dropbear\[$PID\]" | awk '{print $10}'`;
-        #IP=`cat /var/log/auth.log | grep -i dropbear | grep -i "Password auth succeeded" | grep "dropbear\[$PID\]" | awk '{print $12}'`;
-done
-
-echo -e "Calculado!\n"
-echo "El número de usuarios conectados es de ${#connections[*]}."
-echo "======================================"
-espacio=10
-
-
-
-for index in ${!connections[*]}; do
-	#echo "$index - ${connections[$index]}\n"
-	printf "%-${espacio}s%s\n" $index ${connections[$index]}"/?"
-done
-echo -e "\nPresione enter par continuar"
-read;
+function monitorear {
+	monitor
 }
 
 function tempUser {
@@ -153,24 +121,39 @@ function newUser {
 	arr=( [1]='Nombre de usuario: ' [2]="Clave: " [3]="Duración (días): " [4]="Límite de conexiones: " [5]= "IP: " [6]= "Fecha de expiración: ")
 	echo -n ${arr[1]}
 	read name
-	echo -n ${arr[2]}
-	read pass
-	echo -n ${arr[3]}
-	read days
-	echo -n ${arr[4]}
-	read max_logins
-	createUser $name
-	setPwd $name $pass
-	setDays $name $days
-	setLogins $max_logins
+	if (( $(grep $name /etc/passwd | wc -l) == 0 )); then
+		echo -n ${arr[2]}
+		read pass
+		echo -n ${arr[3]}
+		read days
+		echo -n ${arr[4]}
+		read max_logins
+		create_user $name $pass $days $max_logins
+	else
+		echo "EL USUARIO YA EXISTE"
+		echo -n "Presione enter para regresar"
+		read
+		break
+	fi
+
+
+	#createUser $name
+	#setPwd $name $pass
+	#setDays $name $days
+	#setLogins $max_logins
+
 }
 
 
 
 function create_user {
 	clear
-	if [[ : ]]; then
-		#echo "Usuario creado!"
+	if (( $(grep $name /etc/passwd | wc -l) == 0 )); then
+		createUser $name
+		setPwd $name $pass
+		setDays $name $days
+		#setLogins
+		echo "Usuario creado!"
 		echo ${arr[1]}$name
 		echo ${arr[2]}$pass
 		echo ${arr[3]}$days
