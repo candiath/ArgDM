@@ -1,0 +1,64 @@
+#!/bin/bash
+
+# nohup command &>/dev/null &
+# https://www.maketecheasier.com/run-bash-commands-background-linux/
+
+dir="/root/ArgDM"
+errDir="/root/errDir" #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+function limiter() {
+  declare -a PIDs
+  PIDs=(`ps aux | grep -i dropbear | awk '{print $2}'`)
+  echo > /tmp/monitor
+  for PID in "${PIDs[@]}" # Por cada proceso de DropBear
+  do
+    echo "PID es $PID"
+    cat /var/log/auth.log | grep "Password auth succeeded" | grep "dropbear\[$PID\]" >> /tmp/monitor
+#   /tmp/monitor = Aug 12 09:16:48 VPS16 dropbear[27067]: Password auth succeeded for 'pepe' from 192.168.1.141:55701
+    local activeConnections=$(cat /var/log/auth.log | grep "Password auth succeeded" | grep "dropbear\[$PID\]" | awk -F"'" '{print $2}')
+#   pepe
+
+# Sumar
+    declare -A connections # connections[USERNAME]:NumberOfActiveConnections
+    for item in ${activeConnections}; do
+        if [[ -n "$item"  ]]; then #Verificar si es necesario este paso!!!!!!!!!!!!!!!!
+                [ -n "${connections[$item]}" ] && connections[$item]=$((${connections[$item]} + 1)) || connections[$item]=1
+        fi
+    done
+  done
+    # Leo de disco un array asociativo de usuarios y limite de logins
+    # Comparo ese array con $connections
+    # Busco los PIDs mediante grep de usuarios desde /tmp/monitor
+    declare -A loginLimits
+
+# Leo limites
+    #for line in $(cat $dir/limits); do
+      # loginLimits[$($line | awk -F : '{print $1}')]=$($line | awk -F : '{print $2}')
+      #local user=$line | awk -F : '{print $1}'
+      #local limit=$line | awk -F : '{print $2}'
+     # loginLimits[$user]=$limit
+    #done
+loginLimits[pepe]=1
+
+echo "antes es $user"
+
+    for user in ${!connections[@]}
+    do
+      echo "en FOr es $user"
+      if [[ ${connections[$user]} > ${loginLimits[$user]} ]]; then # Si exedió el limite
+        echo "$user excede limite!!!!!!!!!!!!!!!!!!!!!!"
+        for item in $(grep $user /tmp/monitor | awk -F '[][]' '{print $2}') # por cada conexion del usuario
+        do
+          echo "mato a $item"
+          process=$(echo $item) # Mato la conexión
+          kill $process 2> "$errDir/kill \"$process\" $(date +"%F--%T")"
+        done
+# Quería pendiente bloquear el usuario por algunos segundos
+      fi
+done
+echo "terminado"
+}
+echo "hola"
+for i in {1..200}; do
+  limiter
+  sleep 5s
+done
