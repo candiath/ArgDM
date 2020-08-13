@@ -11,85 +11,6 @@ mainFuntion=main
 barra="========================================"
 # Menú usuarios
 
-function limitterMENU() {
-	echo "LIMITANDO======================================================================"
-dir=/root/ArgDM
-while [[ true ]]; do
-    declare -a PIDs
-    PIDs=(`ps aux | grep -i dropbear | awk '{print $2}'`)
-    #echo > /tmp/monitor # Cambiar por Touch!!!!!!!!!!!!!!!!!!!
-    cat /dev/null > /tmp/monitor
-    for PID in "${PIDs[@]}" # Por cada proceso de DropBear
-    do
-      temp=$(cat /var/log/auth.log | grep "Password auth succeeded" | grep "dropbear\[$PID\]")
-      echo $temp >> /tmp/monitor
-      local activeConnections=$(echo $temp | awk -F"'" '{print $2}')
-
-  # Sumar
-      declare -A connections # connections[USERNAME]:NumberOfActiveConnections
-      for item in ${activeConnections}; do
-          if [[ -n "$item"  ]]; then #Verificar si es necesario este paso!!!!!!!!!!!!!!!!
-                  echo "en if ITEM vale $item"
-                  [ -n "${connections[$item]}" ] && connections[$item]=$((${connections[$item]} + 1)) || connections[$item]=1
-          fi
-      done
-    done
-
-  # Leo limites
-      declare -A loginLimits
-      for line in $(cat $dir/limits); do
-        loginLimits[$(echo $line | awk -F : '{print $1}')]=$(echo $line | awk -F : '{print $2}')
-      done
-
-      for user in ${!connections[@]}
-      do
-        
-        if [[ ${connections[$user]} > ${loginLimits[$user]} ]]; then # Si exedió el limite
-          echo "$user excede limite!!!!!!!!!!!!!!!!!!!!!!"
-          for item in $(grep $user /tmp/monitor | awk -F '[][]' '{print $2}') # por cada conexion del usuario
-          do
-            echo "MUERE a $item     =================================="
-            process=$(echo $item) # Mato la conexión
-            kill $process 2> "$errDir/kill \"$process\" $(date +"%F--%T")"
-          done
-  # Quería pendiente bloquear el usuario por algunos segundos
-        fi
-      done
-      unset user
-  unset connections
-  unset loginLimits
-  sleep 5s
-done
-}
-
-
-function limitterEnabler() {
-  echo "soy el limitador"
-  #[ ! getLimitterStatus ] && screen -d -m -t Limitter limitter && return 1 || return 0
-  #if [[ ! getLimitterStatus ]]; then
-    screen -d -m -t Limitter ./limitest
-		limitter
-    echo "activado!"
-    sleep 2s
-  #fi
-}
-
-function limitterDisabler() {
-  result=0
-  for item in $(ps x | grep -i "limitter" | grep -i "screen" | awk '{print $1}'); do
-    kill $item
-    result=1
-  done
-  return $result
-}
-
-function getLimitterStatus() {
-  if [[ $(ps x | grep -i "limitter" | grep -i "screen") ]]; then
-    return 1
-  else
-    return 0
-  fi
-}
 
 function users_mgr() {
 	while [[ : ]]; do
@@ -99,7 +20,7 @@ function users_mgr() {
 	echo -e "========================================"
 	echo -e "[1] Crear usuario"
 	echo -e "[2] !Modificar usuario"
-	echo -e "[3] !Eliminar usuario"
+	echo -e "[3] Eliminar usuario"
 	echo -e "[4] !Crear prueba"
 	echo -e "[5] Listar todos los usuarios"
 	echo -e "[6] Listar usuarios conectados"
@@ -170,17 +91,19 @@ function tempUser {
 	CreateUser $name $pass $days
 }
 
+
 # CreateUser COMMIT
 function CreateUser {
 	name=$1
-	pass=$2
-	days=$3
-	useradd -M -s /bin/false $name &&
+	#pass=$2
+	#days=$3
+	useradd -M -s /bin/false $name
 #	(echo $pass; echo $pass)|passwd $name #2>/dev/null
-	(echo $pass; echo $pass)|passwd $name 			 ||
-	echo "Se ha producido un error al crear el usuario" &&
-	$mainFuntion
+	#(echo $pass; echo $pass)|passwd $name 			 ||
+	#echo "Se ha producido un error al crear el usuario" &&
+	#$mainFuntion
 }
+
 
 function dropUser {
 	back=users_mgr
@@ -188,17 +111,17 @@ function dropUser {
 	echo -n ${arr[1]}
 	read name
 	if [ !$(grep $name /etc/passwd) ] ; then
-		DeleteUser $name && echo "Usuario eliminado" && sleep 2s || echo -e "ERROR FATAL!\n Saliendo..." && sleep 3s && exit
+		DeleteUser $name && echo "Usuario eliminado" &&
+		sed -i "s/$name:.*/$name:0/" /root/ArgDM/limits &&
+		sleep 2s || echo -e "ERROR FATAL!\n Saliendo..." && sleep 3s && exit
 	fi
 }
-
 # DeleteUser COMMIT
 function DeleteUser {
 	name=$1
 	userdel --force $name
+	# Borrar clave en archivo
 }
-
-
 function newUser {
 	clear		#backtick mezclado con comillas dobles!!!!
 	arr=( [1]='Nombre de usuario: ' [2]="Clave: " [3]="Duración (días): " [4]="Límite de conexiones: " [5]= "IP: " [6]= "Fecha de expiración: ")
@@ -226,32 +149,51 @@ function newUser {
 	#setLogins $max_logins
 
 }
-
-
-
 function create_user {
 	clear
 	if (( $(grep $name /etc/passwd | wc -l) == 0 )); then
 		createUser $name
 		setPwd $name $pass
 		setDays $name $days
-		#setLogins
+		if [[ $(grep $name /root/ArgDM/limits | wc -l) == 0 ]]; then
+			setLogins $name $max_logins
+		else
+			sed -i "s/$name:.*/$name:$max_logins/" /root/ArgDM/limits
+		fi
+
 		echo "Usuario creado!"
 		echo ${arr[1]}$name
 		echo ${arr[2]}$pass
 		echo ${arr[3]}$days
 		echo ${arr[4]}$max_logins
-		echo ${arr[5]}"<IP DE MI SERVIDOR>"
+		echo ${arr[5]}$(hostname -I)
 		echo -n "Presione enter para continuar"
 		read
 		users_mgr
 	fi
 }
 
+function setPwd() {
+	(echo $pass; echo $pass)|passwd $name 2>/dev/null
+}
+
+function setDays() {
+	usermod -e $(date '+%C%y-%m-%d' -d "+ $2 days") $1
+	# queda pendiente remover las contras del archivo!!!!!!!!!!!!!!!!!!!
+}
+
+
+function setLogins() {
+	#$dir="/root/ArgDM"
+	echo "$1:$2" >> /root/ArgDM/limits
+}
+
 # PROGRAMA PRINCIPAL
 function main {
 	while [[ : ]]; do
 		clear
+		[ $(getLimitterStatus) -eq 1 ] && echo "Limitter ON" || echo "Limitter OFF"
+		echo $(getLimitterStatus)
 		echo -e "========================================"
 		echo -e "            Menú principal"
 		echo -e "========================================"
@@ -261,8 +203,8 @@ function main {
 		echo -e "[4] "
 		echo -e "[5] Activar LIMITADOR DE CONEXIONES"
 		echo -e "[6] Desactivar LIMITADOR DE CONEXIONES"
-	#	echo -e "[7]"
-	#	echo -e "[8]"
+		echo -e "[7] TEST conn limitter"
+		echo -e "[8] TEST conn usuarios"
 	#	echo -e "[9]"
 	#	echo -e "[10]"
 		echo -e "[0] Salir"
@@ -290,6 +232,12 @@ function main {
 			6 )
 			limitterDisabler
 			;;
+			7 )
+			Tl
+			;;
+			8 )
+			Tu
+			;;
 			0 )
 			clear
 			echo "Hasta pronto!"
@@ -298,11 +246,9 @@ function main {
 		esac
 	done
 }
-
 main
 
-
-function services {
+function services() {
 	while [[ : ]]; do
 		clear
 		echo -e "========================================"
@@ -316,14 +262,12 @@ function services {
 		case $choice in
 			1 )
 			dropbear_install
+			;;
+		esac
+  done
 }
-
 function dropbear_install {
 	echo "instalando dropbear" && sleep 1s
 	apt install dropbear -y
 
 }
-
-
-Tl
-Tu

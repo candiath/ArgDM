@@ -4,9 +4,6 @@
 #       chage -l $user
 # https://www.cyberciti.biz/faq/linux-howto-check-user-password-expiration-date-and-time/
 
-function Tu() {
-  echo "user funciona"
-}
 
 function listarOnlines() {
   local data=( `ps aux | grep -i dropbear | awk '{print $2}'`);
@@ -116,4 +113,10 @@ function setLogins() {
         # uno                           dosroot@VPS16:~#
         ################################################
 
+}
+
+
+function Tu() {
+  echo "user funciona"
+  sleep 1s
 }
