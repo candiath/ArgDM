@@ -4,69 +4,13 @@
 source ./users_source.sh
 source ./limitter_source.sh
 
+check=1
 
-
-mainFuntion=main
+mainViewFuntion=mainView
 # Defino la función
 barra="========================================"
 # Menú usuarios
 
-
-function users_mgr() {
-	while [[ : ]]; do
-	clear
-	echo -e "========================================"
-	echo -e "             Menú Usuarios"
-	echo -e "========================================"
-	echo -e "[1] Crear usuario"
-	echo -e "[2] !Modificar usuario"
-	echo -e "[3] Eliminar usuario"
-	echo -e "[4] !Crear prueba"
-	echo -e "[5] Listar todos los usuarios"
-	echo -e "[6] Listar usuarios conectados"
-	echo -e "[7] Iniciar limitador de conexiones!"
-	#	echo -e "[8]"
-	#	echo -e "[9]"
-	#	echo -e "[10]"
-	echo -e "[0] Atrás"
-	echo -n "Elija una opción: "
-	read choice
-
-	case $choice in
-		1 )
-		newUser
-		;;
-		2 )
-		echo "eligió servicios"
-		sleep 1s
-		;;
-		3 )
-		dropUser
-		;;
-		4 )
-		tempUser
-		;;
-		5 )
-		echo "eligió 5"
-		sleep 1s
-		;;
-		6 )
-		monitorear
-		;;
-		7 )
-		listarOnlines
-		;;
-		0 )
-		clear
-		main
-		;;
-	esac
-	done
-}
-
-function monitorear {
-	monitor
-}
 
 function tempUser {
 	arr=( [1]='Nombre de usuario: ' [2]="Clave: " [3]="Duración (días): " [4]="Límite de conexiones: " [5]= "IP: " [6]= "Fecha de expiración: ")
@@ -92,21 +36,8 @@ function tempUser {
 }
 
 
-# CreateUser COMMIT
-function CreateUser {
-	name=$1
-	#pass=$2
-	#days=$3
-	useradd -M -s /bin/false $name
-#	(echo $pass; echo $pass)|passwd $name #2>/dev/null
-	#(echo $pass; echo $pass)|passwd $name 			 ||
-	#echo "Se ha producido un error al crear el usuario" &&
-	#$mainFuntion
-}
-
-
 function dropUser {
-	back=users_mgr
+	back=userView
 	arr=( [1]='Nombre de usuario: ' [2]="Clave: " [3]="Duración (días): " [4]="Límite de conexiones: " [5]= "IP: " [6]= "Fecha de expiración: ")
 	echo -n ${arr[1]}
 	read name
@@ -122,19 +53,19 @@ function DeleteUser {
 	userdel --force $name
 	# Borrar clave en archivo
 }
-function newUser {
+function newUserForm {
 	clear		#backtick mezclado con comillas dobles!!!!
 	arr=( [1]='Nombre de usuario: ' [2]="Clave: " [3]="Duración (días): " [4]="Límite de conexiones: " [5]= "IP: " [6]= "Fecha de expiración: ")
 	echo -n ${arr[1]}
 	read name
-	if (( $(grep $name /etc/passwd | wc -l) == 0 )); then
+	if (( ! $(userExist) )); then
 		echo -n ${arr[2]}
 		read pass
 		echo -n ${arr[3]}
 		read days
 		echo -n ${arr[4]}
 		read max_logins
-		create_user $name $pass $days $max_logins
+		createUser $name $pass $days $max_logins
 	else
 		echo "EL USUARIO YA EXISTE"
 		echo -n "Presione enter para regresar"
@@ -169,27 +100,48 @@ function create_user {
 		echo ${arr[5]}$(hostname -I)
 		echo -n "Presione enter para continuar"
 		read
-		users_mgr
+		userView
 	fi
 }
-
-function setPwd() {
-	(echo $pass; echo $pass)|passwd $name 2>/dev/null
-}
-
-function setDays() {
-	usermod -e $(date '+%C%y-%m-%d' -d "+ $2 days") $1
+# function setPwd() {
+# 	(echo $pass; echo $pass)|passwd $name 2>/dev/null
+# }
+# function setDays() {
+# 	usermod -e $(date '+%C%y-%m-%d' -d "+ $2 days") $1
 	# queda pendiente remover las contras del archivo!!!!!!!!!!!!!!!!!!!
-}
-
-
-function setLogins() {
-	#$dir="/root/ArgDM"
-	echo "$1:$2" >> /root/ArgDM/limits
-}
-
+#}
+# function setLogins() {
+# 	#$dir="/root/ArgDM"
+# 	echo "$1:$2" >> /root/ArgDM/limits
+# }
 # PROGRAMA PRINCIPAL
-function main {
+
+
+function services() {
+	while [[ : ]]; do
+		clear
+		echo -e "========================================"
+		echo -e "            Menú servicios"
+		echo -e "========================================"
+		echo -e "[1] Instalar Dropbear"
+		echo -e "[0] Atrás"
+		echo -n "Elija una opción: "
+		read choice
+
+		case $choice in
+			1 )
+			dropbear_install
+			;;
+		esac
+  done
+}
+function dropbear_install {
+	echo "instalando dropbear" && sleep 1s
+	apt install dropbear -y
+
+}
+# VIEWS
+function mainView {
 	while [[ : ]]; do
 		clear
 		[ $(getLimitterStatus) -eq 1 ] && echo "Limitter ON" || echo "Limitter OFF"
@@ -213,7 +165,7 @@ function main {
 
 		case $choice in
 			1 )
-			users_mgr
+			userView
 			;;
 			2 )
 			services
@@ -246,28 +198,56 @@ function main {
 		esac
 	done
 }
-main
-
-function services() {
+function userView() {
 	while [[ : ]]; do
+	clear
+	echo -e "========================================"
+	echo -e "             Menú Usuarios"
+	echo -e "========================================"
+	echo -e "[1] Crear usuario"
+	echo -e "[2] !Modificar usuario"
+	echo -e "[3] Eliminar usuario"
+	echo -e "[4] !Crear prueba"
+	echo -e "[5] Listar todos los usuarios"
+	echo -e "[6] Listar usuarios conectados"
+	echo -e "[7] Iniciar limitador de conexiones!"
+	#	echo -e "[8]"
+	#	echo -e "[9]"
+	#	echo -e "[10]"
+	echo -e "[0] Atrás"
+	echo -n "Elija una opción: "
+	read choice
+
+	case $choice in
+		1 )
+		newUserForm
+		;;
+		2 )
+		echo "eligió servicios"
+		sleep 1s
+		;;
+		3 )
+		delUserForm
+		;;
+		4 )
+		tempUser
+		;;
+		5 )
+		userListForm
+		;;
+		6 )
+		listarOnlines 1
+		;;
+		7 )
+		listarOnlines
+		;;
+		0 )
 		clear
-		echo -e "========================================"
-		echo -e "            Menú servicios"
-		echo -e "========================================"
-		echo -e "[1] Instalar Dropbear"
-		echo -e "[0] Atrás"
-		echo -n "Elija una opción: "
-		read choice
-
-		case $choice in
-			1 )
-			dropbear_install
-			;;
-		esac
-  done
+		mainView
+		;;
+	esac
+	done
 }
-function dropbear_install {
-	echo "instalando dropbear" && sleep 1s
-	apt install dropbear -y
 
-}
+
+mainView
