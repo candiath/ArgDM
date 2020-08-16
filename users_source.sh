@@ -22,18 +22,14 @@ function createUser() {
 }
 
 function setPwd() {
-        (echo $2; echo $2)|passwd $1 #0>/dev/null
+        (echo $2; echo $2)|passwd $1 2>/dev/null
         if [[ $? -ne 0 ]]; then
           echo "ERROR en setPwd con user $1 y pass $2 | $(date +'%F--%T')" >> /root/ArgDM/autolog.log
         fi
-        echo "EXIT IS $?"
-        sleep 2s
+        #echo "EXIT IS $?"
         # Revisar qué errores pueden producirse acá
 }
 function setDays() {
-        # $name; $days
-        # expDate=$(date '+%C%y-%m-%d' -d "+ $2 days")
-        # usermod -e $expDate $1
         usermod -e $(date '+%C%y-%m-%d' -d "+ $2 days") $1
         #SERÁ MEJOR USAR CRON PARA BLOQUEAR ESTO
 }
@@ -42,6 +38,7 @@ function setLogins() {
   dir=/root/ArgDM
   # $1 = name
   # $2 = limit
+  echo "Check ==> He recibido "$# " parámetros, que son: "$*
   if [[ $(grep $1 /root/ArgDM/limits | wc -l) == 0 ]]; then
     echo "$1:$2" >> "$dir/limits"
   else
@@ -62,7 +59,7 @@ function setLogins() {
 }
 
 function getLogins() {
-  echo "$(grep $1 /root/ArgDM/limits | awk -F : '{print $2}')"
+  echo "$(grep "\b$1:" /root/ArgDM/limits | awk -F : '{print $2}')"
 }
 
 function userExist() {
@@ -78,10 +75,21 @@ function getSystemUserList() {
 }
 
 function userListForm() {
+  clear
   espacio=20
   printf "%-${espacio}s%s\n" "Nombre" "límite";
-  getSystemUserList;
-  echo "Apretá ENTER para continuar"; read
+  
+  for item in $(getSystemUserList); do
+    local logins
+    logins=$(getLogins $item)
+    if [[ $logins == "" ]]; then
+      printf "%-${espacio}s%s\n" $item "Desconocido :/"
+    else
+      printf "%-${espacio}s%s\n" $item "$logins"
+    fi
+  done
+  echo ""
+  holder
 }
 
 
@@ -105,18 +113,20 @@ function delUserForm() {
   echo \""${userlist[$user]}\""
   if [[ $user -eq 0 ]]; then
     return 0
-  elif [[ ${userlist[$user]} = "" ]]; then
-    echo "${userlist[$user]} "
+  elif [[ ${userlist[$user]} == "" ]]; then
+    echo " ${userlist[$user]} "
     echo "No pude entender eso :/"
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   else
     delUser ${userlist[$user]}
   fi
-  echo "Apretá ENTER para continuar"; read
+  holder
 }
 
 function delUser() {
   if [[ $(userExist $1) ]]; then
-    userdel -f $1 && echo "Eliminé a $1!"
+    userdel -f $1 ## && echo "Eliminé a $1!"
+    sed -i "/$1/d" /root/ArgDM/limits #!!!!!!!!!!!!!!!!!!!!!!!!!!!
   else
     echo "O-Oh! Parece que el usuario ya no existe!"
   fi
@@ -137,7 +147,7 @@ function listarOnlines() {
           fi
   done
   done
-  echo "Check ==> He recibido "$# " parámetros, que son: "$*
+  #echo "Check ==> He recibido "$# " parámetros, que son: "$*
   case $1 in
           1 )
           imprimirLogins;;
@@ -150,8 +160,7 @@ function listarOnlines() {
           #countLogins;;
 
   esac
-  echo "presine algo pra cintinuar"
-  read
+  holder
 }
 function imprimirLogins() {
   #echo "El número de cuentas conectadas es de ${#connections[*]}."
@@ -180,5 +189,10 @@ function monitor() {
 
 function Tu() {
   echo "user funciona"
-  sleep 1s
+  holder
+}
+
+function holder() {
+  echo "Presioná ENTER para continuar ;)"
+  read
 }

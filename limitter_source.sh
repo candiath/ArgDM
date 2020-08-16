@@ -16,8 +16,19 @@ function limitterDisabler() {
     kill $item
   done
   if [[ $(getLimitterStatus) == 1 ]]; then
-      echo "ERROR!"
-      sleep 3s
+    echo -e "ERROR! No se pudo deshabilitar el limitador \n
+    Proceso: $item\n
+    PS: $(ps x | grep -i "limitter" | grep -i "screen")\n 
+    Fecha: $(date +'%F') \n
+    Hora: $(date +'%T') " 2> "$errDir/dropBearLimitter $(date +'%F--%T')"
+    # PROBAR ESTO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+    
+    echo -e "\e[31mERROR! \e[0mAlgo impide deshabilitar el limitador."
+    echo -e "Por favor, reintentá después de reiniciar el servidor con "
+    echo -e "el comando \e[4msudo reboot\e[0m"
+    sleep 3s
   fi
 }
 

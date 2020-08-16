@@ -3,9 +3,10 @@
 #SOURCES
 source ./users_source.sh
 source ./limitter_source.sh
+source ./test.sh
 
 check=1
-
+echo -e "\e[0m"
 mainViewFuntion=mainView
 # Defino la función
 barra="========================================"
@@ -55,10 +56,12 @@ function DeleteUser {
 }
 function newUserForm {
 	clear		#backtick mezclado con comillas dobles!!!!
+	echo -e "\e[2mAcordate de que en cualquier momento podés cancelar la \e[0m"
+	echo -e "\e[2moperación actual con ctrl + c \e[0m "
 	arr=( [1]='Nombre de usuario: ' [2]="Clave: " [3]="Duración (días): " [4]="Límite de conexiones: " [5]= "IP: " [6]= "Fecha de expiración: ")
 	echo -n ${arr[1]}
 	read name
-	if (( ! $(userExist) )); then
+	if (( $(userExist $name) == 0 )); then
 		echo -n ${arr[2]}
 		read pass
 		echo -n ${arr[3]}
@@ -68,9 +71,8 @@ function newUserForm {
 		createUser $name $pass $days $max_logins
 	else
 		echo "EL USUARIO YA EXISTE"
-		echo -n "Presione enter para regresar"
-		read
-		break
+		echo -n "Presioná ENTER para volver a intentarlo"
+		holder
 	fi
 
 
@@ -144,11 +146,10 @@ function dropbear_install {
 function mainView {
 	while [[ : ]]; do
 		clear
-		[ $(getLimitterStatus) -eq 1 ] && echo "Limitter ON" || echo "Limitter OFF"
-		echo $(getLimitterStatus)
-		echo -e "========================================"
-		echo -e "            Menú principal"
-		echo -e "========================================"
+		[ $(getLimitterStatus) -eq 1 ] && echo -e "Limitador \e[32mON\e[39m" || echo -e "Limitador \e[5m\e[31mOFF\e[39m\e[25m"
+		echo -e "\e[36m=========================================\e[39m"
+		echo -e "\e[97m=================\e[40;38;5;226m ArgDM \e[97m=================\e[39m"
+		echo -e "\e[36m=========================================\e[39m"
 		echo -e "[1] Administrar usuarios"
 		echo -e "[2] Administrar servicios"
 		echo -e "[3] Configuraciones"
@@ -157,7 +158,7 @@ function mainView {
 		echo -e "[6] Desactivar LIMITADOR DE CONEXIONES"
 		echo -e "[7] TEST conn limitter"
 		echo -e "[8] TEST conn usuarios"
-	#	echo -e "[9]"
+		echo -e "[9] INCIAR TEST GENERAL"
 	#	echo -e "[10]"
 		echo -e "[0] Salir"
 		echo -n "Elija una opción: "
@@ -190,6 +191,9 @@ function mainView {
 			8 )
 			Tu
 			;;
+			9 )
+			tryUser
+			;;
 			0 )
 			clear
 			echo "Hasta pronto!"
@@ -201,16 +205,16 @@ function mainView {
 function userView() {
 	while [[ : ]]; do
 	clear
-	echo -e "========================================"
-	echo -e "             Menú Usuarios"
-	echo -e "========================================"
+	echo -e "\e[36m========================================\e[39m"
+	echo -e "\e[97m===============\e[40;38;5;226m Usuarios\e[97m ===============\e[39m"
+	echo -e "\e[36m========================================\e[39m"
 	echo -e "[1] Crear usuario"
 	echo -e "[2] !Modificar usuario"
 	echo -e "[3] Eliminar usuario"
 	echo -e "[4] !Crear prueba"
 	echo -e "[5] Listar todos los usuarios"
 	echo -e "[6] Listar usuarios conectados"
-	echo -e "[7] Iniciar limitador de conexiones!"
+	#echo -e "[7] Iniciar limitador de conexiones!"
 	#	echo -e "[8]"
 	#	echo -e "[9]"
 	#	echo -e "[10]"
