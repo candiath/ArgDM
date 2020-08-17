@@ -5,7 +5,7 @@
 # https://www.cyberciti.biz/faq/linux-howto-check-user-password-expiration-date-and-time/
 
 
-function createUser() { 
+function createUser() {
   #Validación pendiente del comando!!!
   if [[ !$(userExist $1) ]]; then
     useradd -M -s /bin/false $1
@@ -18,7 +18,7 @@ function createUser() {
   #$mainFuntion
   # Tengo que buscar una mejor manera de volver al menú anterior!!!!!
   # Acabo de notar que no es necesario volver al menú anterior (creo)
-  # Tendré que probar cómo funciona bash      
+  # Tendré que probar cómo funciona bash
 }
 
 function setPwd() {
@@ -68,64 +68,117 @@ function userExist() {
 }
 
 function getSystemUserList() {
-   
+
   for i in $(grep -v nobody /etc/passwd | awk -F : '{if ( $3 > 999 ) print $1}'); do
     echo $i
   done
 }
 
 function userListForm() {
-  clear
-  espacio=20
-  printf "%-${espacio}s%s\n" "Nombre" "límite";
-  
-  for item in $(getSystemUserList); do
-    local logins
-    logins=$(getLogins $item)
-    if [[ $logins == "" ]]; then
-      printf "%-${espacio}s%s\n" $item "Desconocido :/"
-    else
-      printf "%-${espacio}s%s\n" $item "$logins"
-    fi
-  done
-  echo ""
-  holder
+  if [[ $(getSystemUserList | wc -l) -gt 0 ]]; then
+    espacio=20
+    clear
+    printf "%-${espacio}s%s\n" "Nombre" "límite"
+    for item in $(getSystemUserList); do
+      local logins
+      logins=$(getLogins $item)
+      if [[ $logins == "" ]]; then
+        printf "%-${espacio}s%s\n" $item "Desconocido :/"
+      else
+        printf "%-${espacio}s%s\n" $item "$logins"
+      fi
+    done
+    echo ""
+    holder
+  else
+    echo "No existen usuarios registrados en el sistema!"
+    holder
+  fi
+    clear
 }
 
+function printSystemUserList() {
+  #clear
+  nextSteep=$1
+  if [[ $nextSteep == 1 || $nextSteep == 2 ]]; then
+    local i=0
+    declare -A userlist
+    for item in $(getSystemUserList); do
+      i=$(($i + 1))
+      userlist[$i]=$item
+    done
+
+    if [[ ${#userlist[*]} -gt 0 ]]; then
+      for index in ${!userlist[@]}; do
+        echo "[$index] ${userlist[$index]}"
+      done
+
+      echo "[0] Cancelar operación"
+      echo -n "Ingresá un número:"
+      read user
+
+      if [[ $user -eq 0 ]]; then
+        return 0
+      elif [[ ${userlist[$user]} == "" ]]; then
+        echo "Ingresaste $user"
+        echo "No puedo entender eso :/"
+        echo "Por favor, ingresá un número entre 0 y ${#userlist[*]}"
+        printSystemUserList $nextSteep
+      else
+        case $nextSteep in
+          1) delUser ${userlist[$user]};;
+          2) editUserForm ${userlist[$user]};;
+        esac
+      fi
+    else
+      echo "No encontré a ningún usuario registrado en el sistema!"
+      holder
+    fi
+  fi
+  #holder
+}
 
 function delUserForm() {
   # CARGO ARRAY DE USUARIOS
-  declare -A userlist
-  local i=0
-  for item in $(getSystemUserList); do
-    i=$(($i + 1))
-    userlist[$i]=$item
-  done
+  if [[ $(getSystemUserList | wc -l) -gt 0 ]]; then
+    declare -A userlist
+    local i=0
+    for item in $(getSystemUserList); do
+      i=$(($i + 1))
+      userlist[$i]=$item
+    done
 
-  # IMPRIMO UN NUMERO POR CADA USUARIO
-  for index in ${!userlist[@]}; do
-    echo "[$index] ${userlist[$index]}"
-  done
+    # IMPRIMO UN NUMERO POR CADA USUARIO
+    for index in ${!userlist[@]}; do
+      echo "[$index] ${userlist[$index]}"
+    done
 
-  echo "[0] Cancelar operación"
-  echo -n "Ingresá un número:"
-  read user
-  echo \""${userlist[$user]}\""
-  if [[ $user -eq 0 ]]; then
-    return 0
-  elif [[ ${userlist[$user]} == "" ]]; then
-    echo " ${userlist[$user]} "
-    echo "No pude entender eso :/"
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    echo "[0] Cancelar operación"
+    echo -n "Ingresá un número:"
+    read user
+
+    if [[ $user == "0" ]]; then
+      return 0
+    elif [[ ${userlist[$user]} == "" ]]; then
+      echo "Ingresaste $user"
+      echo "No entiendo eso :/"
+      echo "Por favor, ingresá un número entre 1 y ${#userlist[*]}"
+      echo "Recordá que con 0 volvés atrás!"
+      holder
+      delUserForm
+    else
+      delUser ${userlist[$user]}
+      holder
+    fi
   else
-    delUser ${userlist[$user]}
+    echo "No encontré a ningún usuario registrado en el sistema!"
+    holder
   fi
-  holder
 }
 
 function delUser() {
   if [[ $(userExist $1) ]]; then
-    userdel -f $1 ## && echo "Eliminé a $1!"
+    userdel -f $1 &>/dev/null && echo "Eliminé a $1" &&
     sed -i "/$1/d" /root/ArgDM/limits #!!!!!!!!!!!!!!!!!!!!!!!!!!!
   else
     echo "O-Oh! Parece que el usuario ya no existe!"
@@ -165,9 +218,13 @@ function listarOnlines() {
 function imprimirLogins() {
   #echo "El número de cuentas conectadas es de ${#connections[*]}."
   local espacio=10
-  for key in ${!connections[*]}; do
-    printf "%-${espacio}s%s\n" $key ${connections[$key]}"/$(getLogins $key)"
-  done
+  if [[ ${#connections[*]} -gt 0 ]]; then
+    for key in ${!connections[*]}; do
+      printf "%-${espacio}s%s\n" $key ${connections[$key]}"/$(getLogins $key)"
+    done
+  else
+    echo "No existen usuarios conectados en este momento"  
+  fi
 }
 
 function countLogins() {
@@ -184,15 +241,48 @@ function monitor() {
 }
 
 
+function holder() {
+  echo "Presioná ENTER para continuar ;)"
+  read
+}
 
 
+
+function editUserForm() {
+  #Listar Usuarios
+  # Solicitar selección
+  # Recuperar info del usuario
+
+  echo "Formulario de edición de $1"
+  echo "Nombre: $1"
+  echo -n "Nueva contraseña: "; read pass
+  echo -n "Duración: "; read days
+  echo -n "Límite de conexiones: "; read max_logins
+  editUser $1 $pass $days $max_logins
+
+
+  holder
+}
+
+
+function editUser() {
+  #Validación pendiente del comando!!!
+  if [[ !$(userExist $1) ]]; then
+    setPwd $1 $2
+    setDays $1 $3
+    setLogins $1 $4
+  else
+    echo "Ops! No pude encontrar a $1."
+    echo "Si estás seguro de que "$1" está registrado, por favor comunicate"
+    echo "con mi creador porque no sé qué está pasando :|"
+  fi
+  #$mainFuntion
+  # Tengo que buscar una mejor manera de volver al menú anterior!!!!!
+  # Acabo de notar que no es necesario volver al menú anterior (creo)
+  # Tendré que probar cómo funciona bash
+}
 
 function Tu() {
   echo "user funciona"
   holder
-}
-
-function holder() {
-  echo "Presioná ENTER para continuar ;)"
-  read
 }

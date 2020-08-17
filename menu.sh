@@ -37,17 +37,17 @@ function tempUser {
 }
 
 
-function dropUser {
-	back=userView
-	arr=( [1]='Nombre de usuario: ' [2]="Clave: " [3]="Duración (días): " [4]="Límite de conexiones: " [5]= "IP: " [6]= "Fecha de expiración: ")
-	echo -n ${arr[1]}
-	read name
-	if [ !$(grep $name /etc/passwd) ] ; then
-		DeleteUser $name && echo "Usuario eliminado" &&
-		sed -i "s/$name:.*/$name:0/" /root/ArgDM/limits &&
-		sleep 2s || echo -e "ERROR FATAL!\n Saliendo..." && sleep 3s && exit
-	fi
-}
+# function dropUser {
+# 	back=userView
+# 	arr=( [1]='Nombre de usuario: ' [2]="Clave: " [3]="Duración (días): " [4]="Límite de conexiones: " [5]= "IP: " [6]= "Fecha de expiración: ")
+# 	echo -n ${arr[1]}
+# 	read name
+# 	if [ !$(grep $name /etc/passwd) ] ; then
+# 		DeleteUser $name && echo "Usuario eliminado" &&
+# 		sed -i "s/$name:.*/$name:0/" /root/ArgDM/limits &&
+# 		sleep 2s || echo -e "ERROR FATAL!\n Saliendo..." && sleep 3s && exit
+# 	fi
+# }
 # DeleteUser COMMIT
 function DeleteUser {
 	name=$1
@@ -209,7 +209,7 @@ function userView() {
 	echo -e "\e[97m===============\e[40;38;5;226m Usuarios\e[97m ===============\e[39m"
 	echo -e "\e[36m========================================\e[39m"
 	echo -e "[1] Crear usuario"
-	echo -e "[2] !Modificar usuario"
+	echo -e "[2] Modificar usuario"
 	echo -e "[3] Eliminar usuario"
 	echo -e "[4] !Crear prueba"
 	echo -e "[5] Listar todos los usuarios"
@@ -219,7 +219,7 @@ function userView() {
 	#	echo -e "[9]"
 	#	echo -e "[10]"
 	echo -e "[0] Atrás"
-	echo -n "Elija una opción: "
+	echo -n "Elegí una opción: "
 	read choice
 
 	case $choice in
@@ -227,8 +227,8 @@ function userView() {
 		newUserForm
 		;;
 		2 )
-		echo "eligió servicios"
-		sleep 1s
+		printSystemUserList 2
+		# El parámetro 2 llama a editUserForm
 		;;
 		3 )
 		delUserForm

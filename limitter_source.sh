@@ -2,11 +2,11 @@
 #screen -r -S "bot_plus" -X quit
 
 function limitterEnabler() {
-  echo "soy el enabler"
+  #echo "soy el enabler"
   echo $(getLimitterStatus)
   [ $(getLimitterStatus) -eq 0 ] && screen -dmS dropbearLimitter ./limitter.sh #&& return 1 || return 0
     if [[ $(getLimitterStatus) == 0 ]]; then
-      echo "ERROR!"
+      echo "ERROR! No se ha podido habilitar el limitador"
       sleep 3s
     fi
 }
