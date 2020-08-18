@@ -1,6 +1,10 @@
 #!/bin/bash
 #screen -r -S "bot_plus" -X quit
 
+
+# INSTALAR CRON!!!!!!!!!!!!!!!!!!!!!!!!!!
+# https://www.digitalocean.com/community/tutorials/how-to-use-cron-to-automate-tasks-ubuntu-1804-es
+
 function limitterEnabler() {
   #echo "soy el enabler"
   echo $(getLimitterStatus)
@@ -39,6 +43,20 @@ function getLimitterStatus() {
     echo "0"
   fi
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

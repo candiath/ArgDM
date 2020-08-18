@@ -9,9 +9,9 @@ nameTry=nameTry
   if [[ $(grep "$nameTry" /etc/passwd | wc -l) -eq 0 ]]; then
     createUser $nameTry $nameTry 5 5
     if [[ $(grep "$nameTry" /etc/passwd | wc -l) -eq 1 ]]; then
-      echo "User creation SUCCESS!"
+      echo -e "User creation \e[32mSUCCESS! \e[0m"
       else
-        echo "ERROR: USER CREATION FAILED. \nStopping"
+        echo -e "\e[31mERROR: USER CREATION FAILED.\e[0m \nStopping"
         return 1
     fi
     #setPwd $nameTry $nameTry && echo "Password command"
@@ -21,9 +21,9 @@ nameTry=nameTry
       setDays $nameTry 5;
       chage -l $nameTry > /tmp/$nameTry;
       if [[ $(grep "Account expires" /tmp/$nameTry | awk -F : '{print $2}') != "never" ]]; then
-        echo "PASSWORD SET COMMAND SUCCESS!";
+        echo -e "PASSWORD SET COMMAND \e[32mSUCCESS! \e[0m";
       else
-        echo "ERROR: PASSWORD SET COMMAND FAILED. \nStopping" && return 1;
+        echo -e "\e[31mERROR: PASSWORD SET COMMAND FAILED. \e[0m \nStopping" && return 1;
       fi
     fi
 
@@ -32,9 +32,9 @@ nameTry=nameTry
       setLogins $nameTry 5
     else
       if [[ $(grep "$nameTry:5" /root/ArgDM/limits | wc -l) != 0 ]]; then
-        echo "SET LOGINS COMMAND SUCCESS!"
+        echo -e "SET LOGINS COMMAND \e[32mSUCCESS! \e[0m"
       else
-        echo "ERROR: SET LOGINS COMMAND FAILED. \nStopping"
+        echo -e "\e[31mERROR: SET LOGINS COMMAND FAILED. \e[0m \nStopping"
         echo "Espected result: $nameTry:5"
         echo "Real result: $(grep $nameTry /root/ArgDM/limits)"
         return 1
@@ -45,9 +45,9 @@ nameTry=nameTry
    
 
     if [[ $(getLogins $nameTry) == "5" ]]; then
-      echo "GET LOGINS COMMAND SUCCESS!"
+      echo -e "GET LOGINS COMMAND \e[32mSUCCESS! \e[0m"
     else
-      echo "ERROR: GET LOGINS COMMAND FAILED. \n Stopping"
+      echo -e "\e[31mERROR: GET LOGINS COMMAND FAILED. \e[0m \nStopping"
       echo "Login espected 5"
       echo "Login received $(getLogins $nameTry)"
       return 1
@@ -56,9 +56,9 @@ nameTry=nameTry
 
 
     if [[ $(userExist $nameTry) == 1 ]]; then
-      echo "USER EXIST COMMAND SUCCESS!"
+      echo -e "USER EXIST COMMAND \e[32mSUCCESS! \e[0m"
     else
-      echo "ERROR: USER EXIST COMMAND FAILED. \n Stopping"
+      echo -e "\e[31mERROR: USER EXIST COMMAND FAILED.\e[0m \nStopping"
       return 1
     fi
 
@@ -66,21 +66,22 @@ nameTry=nameTry
     if [[ $(grep "\b$nameTry:" /etc/passwd | wc -l) -eq 1 ]]; then
       delUser $nameTry
       if [[ $(grep "\b$nameTry:" /etc/passwd | wc -l) -eq 0 ]]; then
-        echo "DEL USER COMMAND SUCCESS!"
+        echo -e "DEL USER COMMAND \e[32mSUCCESS! \e[0m"
       else
-        echo "ERROR: DEL USER COMMAND FAILED. \n Stopping"
+        echo -e "\e[31mERROR: DEL USER COMMAND FAILED.\e[0m \nStopping"
       fi
     fi
   
   else
-    echo "Environment not in conditions. Trying to repair it"
+    echo -e "\e[93mEnvironment not in conditions. Trying to repair it \e[0m"
     if [[ $(grep "$nameTry" /etc/passwd | wc -l) -eq 1 ]]; then
       userdel -f $nameTry
       sed -i '/$nameTry/d' /root/ArgDM/limits
       if [[ $(grep "$nameTry" /etc/passwd | wc -l) -eq 0 ]]; then
-        echo "Repair DONE!"
-        echo "Restarting test"
-        echo ""
+        echo -e "\e[32mRepair DONE!"
+        echo -e "Restarting test"
+        echo -e "\e[0m"
+        sleep 3s
         tryUser
       fi
 

@@ -17,15 +17,26 @@ function tempUser {
 	arr=( [1]='Nombre de usuario: ' [2]="Clave: " [3]="Duración (días): " [4]="Límite de conexiones: " [5]= "IP: " [6]= "Fecha de expiración: ")
 	echo -n ${arr[1]}
 	read name
-	echo "TEST name => $name"
-	if [ $(grep $name /etc/passwd) ] ; then
-		clear
-		echo "El usuario \"$name\" ya existe"
-		echo "Por favor, ingrese otro nombre de usuario"
-		tempUser
+	if [ $(userExist $name) == "0" ] ; then
+		# echo -n ${arr[2]}
+		# read pass
+		# Contrasenia por defecto: 1234
+		echo "Duración: "
+		echo "Ejemplo: 1h 30m para una hora y treinta minutos."
+		echo "Si se deja en blanco se asignará media hora"
+		echo "Si sólo ingresás números los tomaré como minutos"
+		echo "Ingresá la duración del usuario: "
+		read time
+
+
+
+		# cat sample | grep -E ^[0-9]\{1,2}[h,m]\?\s\?
+
+
+
+		
+
 	fi
-	echo -n ${arr[2]}
-	read pass
 	echo -n ${arr[3]}
 	read days
 	if [ $days = "" ] ; then
@@ -134,6 +145,7 @@ function services() {
 			1 )
 			dropbear_install
 			;;
+			0 ) clear; mainView;;
 		esac
   done
 }
@@ -146,10 +158,12 @@ function dropbear_install {
 function mainView {
 	while [[ : ]]; do
 		clear
-		[ $(getLimitterStatus) -eq 1 ] && echo -e "Limitador \e[32mON\e[39m" || echo -e "Limitador \e[5m\e[31mOFF\e[39m\e[25m"
+		[ $(getLimitterStatus) -eq 1 ] && echo -e -n "Limitador \e[32mON\e[39m" || echo -e -n "Limitador \e[5m\e[31mOFF\e[39m\e[25m"
+		echo "        Usuarios online:" $(listarOnlines 3)
+		echo "Usuarios vencidos "
 		echo -e "\e[36m=========================================\e[39m"
 		echo -e "\e[97m=================\e[40;38;5;226m ArgDM \e[97m=================\e[39m"
-		echo -e "\e[36m=========================================\e[39m"
+		echo -e "\e[36m=========================================\e[39m\e[0m"
 		echo -e "[1] Administrar usuarios"
 		echo -e "[2] Administrar servicios"
 		echo -e "[3] Configuraciones"
@@ -211,7 +225,7 @@ function userView() {
 	echo -e "[1] Crear usuario"
 	echo -e "[2] Modificar usuario"
 	echo -e "[3] Eliminar usuario"
-	echo -e "[4] !Crear prueba"
+	echo -e "[4] Crear usuario temporal"
 	echo -e "[5] Listar todos los usuarios"
 	echo -e "[6] Listar usuarios conectados"
 	#echo -e "[7] Iniciar limitador de conexiones!"
@@ -255,3 +269,7 @@ function userView() {
 
 
 mainView
+
+function confView() {
+
+}

@@ -10,10 +10,11 @@ function createUser() {
   if [[ !$(userExist $1) ]]; then
     useradd -M -s /bin/false $1
     setPwd $1 $2
-    #setDays $1 $3
-    setLogins $1 $4
+    # setDays $1 $3
+    # setLogins $1 $4
+    setLimits $1 $3 $4
   else
-    echo "Ya se ha registrado un usuario con el nombre $1"
+    echo "Ya se existe un usuario con el nombre $1"
   fi
   #$mainFuntion
   # Tengo que buscar una mejor manera de volver al menú anterior!!!!!
@@ -29,34 +30,45 @@ function setPwd() {
         #echo "EXIT IS $?"
         # Revisar qué errores pueden producirse acá
 }
-function setDays() {
-        usermod -e $(date '+%C%y-%m-%d' -d "+ $2 days") $1
-        #SERÁ MEJOR USAR CRON PARA BLOQUEAR ESTO
-}
 
-function setLogins() {
-  dir=/root/ArgDM
-  # $1 = name
-  # $2 = limit
+function setLimits() {
+        #usermod -e $(date '+%C%y-%m-%d' -d "+ $2 days") $1
+# $name $days $max_logins
+
+  dir=/root/ArgDM 
   echo "Check ==> He recibido "$# " parámetros, que son: "$*
   if [[ $(grep $1 /root/ArgDM/limits | wc -l) == 0 ]]; then
-    echo "$1:$2" >> "$dir/limits"
+    #echo "$1:$3:$(date +"%Y%m%d%H%M" -d "+ $2 days")" >> "$dir/limits"
+    echo "$1:$3:$(date +"%Y%m%d" -d "+ $2 days"):$(date +"%H%M")" >> "$dir/limits"
   else
-    sed -i "s/$1:.*/$1:$2/" /root/ArgDM/limits
+    sed -i "s/\b$1:.*/$1:$3:$(date +"%Y%m%d" -d "+ $2 days"):$(date +"%H%M")/" /root/ArgDM/limits # TESTEAR POSIBLES FALLAS ACÁ!!!!!!!!!
   fi
-    # Active logins:
-        # ps -u $usur |grep sshd |wc -l
-        #
-        # Logout ssh users (no dropbear)
-        # pkill -KILL -u pepe
 
-        ################################################
-        # Separador para formar columnas alineadas
-        # espacio=30
-        # printf "%-${espacio}s%s" uno dos
-        # uno                           dosroot@VPS16:~#
-        ################################################
+
 }
+
+function getLimits() { # max_logins:fecha_expiración
+  echo $(grep $1 /root/ArgDM/limits | awk -F : '{print $2":"$3":"$4}')
+}
+
+# function setLogins() {
+  
+#   # $1 = name
+#   # $2 = limit
+  
+#     # Active logins:
+#         # ps -u $usur |grep sshd |wc -l
+#         #
+#         # Logout ssh users (no dropbear)
+#         # pkill -KILL -u pepe
+
+#         ################################################
+#         # Separador para formar columnas alineadas
+#         # espacio=30
+#         # printf "%-${espacio}s%s" uno dos
+#         # uno                           dosroot@VPS16:~#
+#         ################################################
+# }
 
 function getLogins() {
   echo "$(grep "\b$1:" /root/ArgDM/limits | awk -F : '{print $2}')"
@@ -78,14 +90,23 @@ function userListForm() {
   if [[ $(getSystemUserList | wc -l) -gt 0 ]]; then
     espacio=20
     clear
-    printf "%-${espacio}s%s\n" "Nombre" "límite"
-    for item in $(getSystemUserList); do
-      local logins
-      logins=$(getLogins $item)
-      if [[ $logins == "" ]]; then
-        printf "%-${espacio}s%s\n" $item "Desconocido :/"
+    printf "%-${espacio}s %-${espacio}s %-${espacio}s \n" "Nombre" "Límite" "Expiración"
+    for user in $(getSystemUserList); do
+      # logins=$(getLogins $user)
+      local limits=$(getLimits $user)
+      # limits=max_logins:fecha_expiración:hora
+      local max_logins=$(echo $limits | awk -F : '{print $1}')
+      local date=$(echo $limits | awk -F : '{print $2}')
+      local hour=$(echo $limits | awk -F : '{print $3}')
+      if [[ $limits == "" ]]; then
+        printf "%-${espacio}s%s\n" $user "Desconocido :/"
       else
-        printf "%-${espacio}s%s\n" $item "$logins"
+        #printf "%-${espacio}s %-${espacio}d %-${espacio}s %s \n" $user $max_logins $(date -d $date +"%d/%m/%Y") $(date -d $hour +"%H:%M")
+        printf "%-${espacio}s %-${espacio}d%-s %-s\n" $user $max_logins $(date -d $date +"%d/%m/%Y") $(date -d $hour +"%H:%M")
+        # date -d 20200819T2052 +"%Y/%m/%d:%H:%M"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # date -d 20200819T2052 +"%d/%m/%Y %H:%M"
+
+
       fi
     done
     echo ""
@@ -126,8 +147,12 @@ function printSystemUserList() {
         printSystemUserList $nextSteep
       else
         case $nextSteep in
-          1) delUser ${userlist[$user]};;
-          2) editUserForm ${userlist[$user]};;
+          1) 
+          delUser ${userlist[$user]}
+          ;;
+          2) 
+          editUserForm ${userlist[$user]}
+          ;;
         esac
       fi
     else
@@ -213,7 +238,7 @@ function listarOnlines() {
           #countLogins;;
 
   esac
-  holder
+  #holder
 }
 function imprimirLogins() {
   #echo "El número de cuentas conectadas es de ${#connections[*]}."
@@ -225,6 +250,7 @@ function imprimirLogins() {
   else
     echo "No existen usuarios conectados en este momento"  
   fi
+  holder
 }
 
 function countLogins() {
@@ -238,6 +264,7 @@ function countLogins() {
 function monitor() {
   echo "monitor"
   listarOnlines 1
+  holder
 }
 
 
@@ -269,8 +296,7 @@ function editUser() {
   #Validación pendiente del comando!!!
   if [[ !$(userExist $1) ]]; then
     setPwd $1 $2
-    setDays $1 $3
-    setLogins $1 $4
+    setLimits $1 $3 $4
   else
     echo "Ops! No pude encontrar a $1."
     echo "Si estás seguro de que "$1" está registrado, por favor comunicate"
@@ -285,4 +311,14 @@ function editUser() {
 function Tu() {
   echo "user funciona"
   holder
+}
+
+
+
+function getDate() { # AñoMesDiaHoraMinuto
+  echo "$(grep "\b$1:" /root/ArgDM/limits | awk -F : '{print $3$4$5}')"
+}
+
+function userLockStatus() {
+  echo $(passwd -S $1 | awk -F " " '{print $2}')
 }
