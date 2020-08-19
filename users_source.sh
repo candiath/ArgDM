@@ -10,9 +10,8 @@ function createUser() {
   if [[ !$(userExist $1) ]]; then
     useradd -M -s /bin/false $1
     setPwd $1 $2
-    # setDays $1 $3
-    # setLogins $1 $4
-    setLimits $1 $3 $4
+    # $name $pass $days $max_logins
+    setLimits $1 $4 $3
   else
     echo "Ya se existe un usuario con el nombre $1"
   fi
@@ -31,24 +30,39 @@ function setPwd() {
         # Revisar qué errores pueden producirse acá
 }
 
-function setLimits() {
-        #usermod -e $(date '+%C%y-%m-%d' -d "+ $2 days") $1
-# $name $days $max_logins
-
+function setLimits() { # $name $maxLogins $days $hours $minutes
+  # $name $days $max_logins
+  days=$3
+  hours=$4
+  minutes=$5
+  if [[ $days -lt 1 ]]; then
+    days=0
+  fi
+  if [[ $hours -lt 1 ]]; then
+    hours=0
+  fi
+  if [[ $minutes -lt 1 ]]; then
+    minutes=0
+  fi
   dir=/root/ArgDM 
-  echo "Check ==> He recibido "$# " parámetros, que son: "$*
+  #echo "Check ==> He recibido "$# " parámetros, que son: "$*
   if [[ $(grep $1 /root/ArgDM/limits | wc -l) == 0 ]]; then
-    #echo "$1:$3:$(date +"%Y%m%d%H%M" -d "+ $2 days")" >> "$dir/limits"
-    echo "$1:$3:$(date +"%Y%m%d" -d "+ $2 days"):$(date +"%H%M")" >> "$dir/limits"
+    # echo "$1:$3:$(date +"%Y%m%d" -d "+ $2 days"):$(date +"%H%M")" >> "$dir/limits"
+    echo "$1:$2:$(date  +"%Y%m%d%H%M" -d "+ $days days $hours hours $minutes minutes")" >> "$dir/limits"
+    echo "CHECK+ $3 days $4 hours $5 minutes"
+    read
   else
-    sed -i "s/\b$1:.*/$1:$3:$(date +"%Y%m%d" -d "+ $2 days"):$(date +"%H%M")/" /root/ArgDM/limits # TESTEAR POSIBLES FALLAS ACÁ!!!!!!!!!
+    sed -i "s/\b$1:.*/$1:$2:$(date  +"%Y%m%d%H%M" -d "+ $days days $hours hours $minutes minutes")/" /root/ArgDM/limits # TESTEAR POSIBLES FALLAS ACÁ!!!!!!!!!
+    echo "CHECK+ $days days $hours hours $minutes minutes"
+    date  +"%Y%m%d%H%M" -d "+ $days days $hours hours $minutes minutes"
   fi
 
 
 }
 
 function getLimits() { # max_logins:fecha_expiración
-  echo $(grep $1 /root/ArgDM/limits | awk -F : '{print $2":"$3":"$4}')
+  # echo $(grep $1 /root/ArgDM/limits | awk -F : '{print $2":"$3":"$4}')
+  echo $(grep $1 /root/ArgDM/limits | awk -F : '{print $2":"$3}')
 }
 
 # function setLogins() {
@@ -88,23 +102,33 @@ function getSystemUserList() {
 
 function userListForm() {
   if [[ $(getSystemUserList | wc -l) -gt 0 ]]; then
-    espacio=20
+    espacio=15
     clear
     printf "%-${espacio}s %-${espacio}s %-${espacio}s \n" "Nombre" "Límite" "Expiración"
     for user in $(getSystemUserList); do
       # logins=$(getLogins $user)
       local limits=$(getLimits $user)
       # limits=max_logins:fecha_expiración:hora
+
+
+      #Ahora
+      # limits=max_logins:DATETIME
       local max_logins=$(echo $limits | awk -F : '{print $1}')
-      local date=$(echo $limits | awk -F : '{print $2}')
-      local hour=$(echo $limits | awk -F : '{print $3}')
+      local datetime=$(echo $limits | awk -F : '{print $2}')
+      datetime=$(echo "${datetime:0:8}T${datetime:8:4}")
+      echo "datetime es $datetime"
+
+      # local hour=$(echo $limits | awk -F : '{print $3}')
       if [[ $limits == "" ]]; then
         printf "%-${espacio}s%s\n" $user "Desconocido :/"
       else
         #printf "%-${espacio}s %-${espacio}d %-${espacio}s %s \n" $user $max_logins $(date -d $date +"%d/%m/%Y") $(date -d $hour +"%H:%M")
-        printf "%-${espacio}s %-${espacio}d%-s %-s\n" $user $max_logins $(date -d $date +"%d/%m/%Y") $(date -d $hour +"%H:%M")
+        printf "%-${espacio}s %-${espacio}d%-s %-s\n" $user $max_logins $(date +"%d/%m/%Y %H:%M" -d $datetime)
         # date -d 20200819T2052 +"%Y/%m/%d:%H:%M"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # date -d 20200819T2052 +"%d/%m/%Y %H:%M"
+
+
+        #date +"%d/%m/%Y %H:%M" -d $(echo "${str:0:8}T${str:8:4}")
 
 
       fi
@@ -296,7 +320,7 @@ function editUser() {
   #Validación pendiente del comando!!!
   if [[ !$(userExist $1) ]]; then
     setPwd $1 $2
-    setLimits $1 $3 $4
+    setLimits $1 $4 $3 # $name $maxLogins $days $hours $minutes
   else
     echo "Ops! No pude encontrar a $1."
     echo "Si estás seguro de que "$1" está registrado, por favor comunicate"
@@ -322,3 +346,37 @@ function getDate() { # AñoMesDiaHoraMinuto
 function userLockStatus() {
   echo $(passwd -S $1 | awk -F " " '{print $2}')
 }
+
+
+# function customTime() {
+#   unset number
+#   unset hours
+#   unset minutes
+#   read -p 'ingrese el tiempo: '
+#   cadena=$REPLY
+
+# for (( i = 0; i < ${#cadena}; i++ )); do
+#     char=$(echo ${cadena:$i:1})
+#     echo "i = $i"
+#     echo "char = $char"
+#     if [[ $char =~ ^[0-9]+$ ]]; then
+#       number="${number}$char"
+#       echo "number tiene $number"
+#     elif [[ $char == "h" ]]; then
+#       hours=$number
+#       echo "hours tiene $hours"
+#       unset number
+#     elif [[ $char == "m" ]]; then
+#       minutes=$number
+#       echo "minutes tiene $minutes"
+#       unset number
+#     fi
+# done
+
+# if [[ ! -z $number ]]; then
+#   minutes=$number
+#   echo "$hours horas y $minutes minutos."
+# else
+#   echo "$hours horas y $minutes minutos."
+# fi
+# } 

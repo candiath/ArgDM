@@ -26,17 +26,44 @@ function tempUser {
 		echo "Si se deja en blanco se asignará media hora"
 		echo "Si sólo ingresás números los tomaré como minutos"
 		echo "Ingresá la duración del usuario: "
-		read time
+		#function customTime() {
+		  unset number
+		  unset hours
+		  unset minutes
+		  read -p 'Ingresá la duración del usuario: '
+		  cadena=$REPLY
 
+		for (( i = 0; i < ${#cadena}; i++ )); do
+		    char=$(echo ${cadena:$i:1})
+		    echo "i = $i"
+		    echo "char = $char"
+		    if [[ $char =~ ^[0-9]+$ ]]; then
+		      number="${number}$char"
+		      echo "number tiene $number"
+		    elif [[ $char == "h" ]]; then
+		      hours=$number
+		      echo "hours tiene $hours"
+		      unset number
+		    elif [[ $char == "m" ]]; then
+		      minutes=$number
+		      echo "minutes tiene $minutes"
+		      unset number
+		    fi
+		done
 
-
-		# cat sample | grep -E ^[0-9]\{1,2}[h,m]\?\s\?
-
-
-
+		if [[ ! -z $number ]]; then
+		  minutes=$number
+		  echo "$hours horas y $minutes minutos."
+		else
+		  echo "$hours horas y $minutes minutos."
+		fi
+		#} 
+for (( i = 0; i < 1000; i++ )); do
+	if [[ 20200817 -lt 5 ]]; then
 		
-
 	fi
+done
+
 	echo -n ${arr[3]}
 	read days
 	if [ $days = "" ] ; then
@@ -44,7 +71,11 @@ function tempUser {
 		echo "Duración establecida en 30 minutos por defecto"
 		sleep 2s
 	fi
+
 	CreateUser $name $pass $days
+	else
+		echo "El usuario ya existe"
+	fi
 }
 
 
