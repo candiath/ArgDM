@@ -5,15 +5,125 @@
 # https://www.cyberciti.biz/faq/linux-howto-check-user-password-expiration-date-and-time/
 
 
+#queda pendiente mostrar los datos luego de crear usuario
+#generar activador de cchec expiration
+
+# Esta función recibe $name $pass $defaultMagnitude y $isTest y  se encarga de pedir los límites tanto de logins máximos como de tiempo
+# y los envía a createUser()
+function readLimits() {
+   
+    #echo "Duración: "
+    validity=0
+    number=0
+    days=0
+    hours=0
+    minutes=0
+    #while [[ $validity == "0" ]]; do
+      echo "Ejemplo: 1d 2h 30m (un día, 2 horas y 30 minutos)."
+      #echo "Si sólo ingresás números los tomaré como minutos"
+      #echo "Ingresá la duración del usuario: "
+      #function customTime() {
+        
+        # read -p 'Ingresá la duración del usuario: '
+        read -e -p "Ingresá la duración del usuario:" -i "30" cadena
+        # cadena=$REPLY
+
+      # Convierto la entrada a dias, horas y minutos
+      for (( i = 0; i < ${#cadena}; i++ )); do
+          char=$(echo ${cadena:$i:1})
+         # echo "i = $i"
+          #echo "char = $char"
+          if [[ $char =~ ^[0-9]+$ ]]; then
+            number="${number}$char"
+            #echo "number tiene $number"
+          elif [[ $char == "d" ]]; then
+            days=$number
+            #echo "hours tiene $hours"
+            unset number
+        elif [[ $char == "h" ]]; then
+            hours=$number
+            #echo "hours tiene $hours"
+            unset number
+          elif [[ $char == "m" ]]; then
+            minutes=$number
+            #echo "minutes tiene $minutes"
+            unset number
+          fi
+      done
+
+      if [[ $number -gt 0 ]]; then
+        echo "number tiene $number"
+        case $3 in
+          1 )
+          days=$number #; validity=1
+          ;;
+          2 )
+          hours=$number #; validity=1
+          ;;
+          3 )
+          minutes=$number #; validity=1
+          ;;
+        esac
+      fi
+
+# echo "CHECK $days days, $hours horas y $minutes minutos."
+
+      # echo "No se ha ingresado una entrada válida."
+      # echo "Por favor, ingrese en el formato dias horas minutos"
+      # echo "Ejemplo: 1d 5h 15m"
+      # holder
+      # clear
+
+
+    #done
+    # Establezco entrada sin letras como minutos
+    # if [[ ! -z $number ]]; then
+    #   minutes=$number
+    #   echo "$days days, $hours horas y $minutes minutos."
+    # else
+    #   echo "$days days, $hours horas y $minutes minutos."
+    # fi
+    #} 
+
+
+  # if [ $days = "" ] ; then
+  #   $days=30
+  #   echo "Duración establecida en 30 minutos por defecto"
+  #   sleep 2s
+  # fi
+  #days=0
+  # max_logins=1
+  read -e -p "Limite de conexiones:" -i "1" max_logins
+  createUser $name $pass $max_logins $days $hours $minutes $isTest
+  # else
+  #   echo "El usuario ya existe"
+  # fi
+}
+
+
+
+#ENTRADA desde tempUser: $name $pass $max_logins $days $hours $minutes $isTest
 function createUser() {
   #Validación pendiente del comando!!!
-  if [[ !$(userExist $1) ]]; then
+
+  #echo "createUser ==> He recibido "$# " parámetros, que son: "$*
+  if [[ $(userExist $1) == "0" ]]; then
     useradd -M -s /bin/false $1
     setPwd $1 $2
-    # $name $pass $days $max_logins
-    setLimits $1 $4 $3
+    #ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
+#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
+#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
+#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
+#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
+#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
+#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
+
+# VALIDAR PASS NO VACÍA PORQUE ROMPE EL RESTO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Y no es seguro
+
+    # $name $maxLogins $days $hours $minutes $isTest
+    setLimits $1 $3 $4 $5 $6 $7
   else
-    echo "Ya se existe un usuario con el nombre $1"
+    echo "Ya existe un usuario con el nombre $1"
   fi
   #$mainFuntion
   # Tengo que buscar una mejor manera de volver al menú anterior!!!!!
@@ -30,8 +140,9 @@ function setPwd() {
         # Revisar qué errores pueden producirse acá
 }
 
-function setLimits() { # $name $maxLogins $days $hours $minutes
+function setLimits() { # $name $maxLogins $days $hours $minutes $isTest
   # $name $days $max_logins
+  #echo "setLimits ==> He recibido "$# " parámetros, que son: "$*
   days=$3
   hours=$4
   minutes=$5
@@ -45,17 +156,24 @@ function setLimits() { # $name $maxLogins $days $hours $minutes
     minutes=0
   fi
   dir=/root/ArgDM 
+
+  if [[ $isTest == "1" ]]; then
+    testString=:1
+  fi
+
   #echo "Check ==> He recibido "$# " parámetros, que son: "$*
   if [[ $(grep $1 /root/ArgDM/limits | wc -l) == 0 ]]; then
     # echo "$1:$3:$(date +"%Y%m%d" -d "+ $2 days"):$(date +"%H%M")" >> "$dir/limits"
-    echo "$1:$2:$(date  +"%Y%m%d%H%M" -d "+ $days days $hours hours $minutes minutes")" >> "$dir/limits"
-    echo "CHECK+ $3 days $4 hours $5 minutes"
-    read
+    echo "$1:$2:$(date  +"%Y%m%d%H%M" -d "+ $days days $hours hours $minutes minutes")$testString" >> "$dir/limits"
+    # echo "CHECK+ $3 days $4 hours $5 minutes"
+    # read
   else
-    sed -i "s/\b$1:.*/$1:$2:$(date  +"%Y%m%d%H%M" -d "+ $days days $hours hours $minutes minutes")/" /root/ArgDM/limits # TESTEAR POSIBLES FALLAS ACÁ!!!!!!!!!
-    echo "CHECK+ $days days $hours hours $minutes minutes"
-    date  +"%Y%m%d%H%M" -d "+ $days days $hours hours $minutes minutes"
+    sed -i "s/\b$1:.*/$1:$2:$(date  +"%Y%m%d%H%M" -d "+ $days days $hours hours $minutes minutes")$testString/" /root/ArgDM/limits # TESTEAR POSIBLES FALLAS ACÁ!!!!!!!!!
+    # echo "CHECK++ $days days $hours hours $minutes minutes"
+    #date  +"%Y%m%d%H%M" -d "+ $days days $hours hours $minutes minutes"
   fi
+
+  holder
 
 
 }
@@ -89,8 +207,10 @@ function getLogins() {
 }
 
 function userExist() {
-   [ $(grep "\b$1:" /etc/passwd | wc -l) -eq 1 ] && echo "1" || echo "0" #echo "existe" || echo "no existe"
+   # [ $(grep "\b$1:" /etc/passwd | wc -l) -eq 1 ] && echo "1" || echo "0" #echo "existe" || echo "no existe"
+   [ $(cat /etc/passwd | awk -F : '{print $1":"}' | grep "\b$1:" | wc -l) -eq 1 ] && echo "1" || echo "0" #echo "existe" || echo "no existe"
    # $(grep pepe /etc/passwd) también puede funcionar
+
 }
 
 function getSystemUserList() {
@@ -115,15 +235,15 @@ function userListForm() {
       # limits=max_logins:DATETIME
       local max_logins=$(echo $limits | awk -F : '{print $1}')
       local datetime=$(echo $limits | awk -F : '{print $2}')
-      datetime=$(echo "${datetime:0:8}T${datetime:8:4}")
-      echo "datetime es $datetime"
+      datetime=$(echo "${datetime:0:8} ${datetime:8:4}")
+      #echo "datetime es \"$datetime\""
 
       # local hour=$(echo $limits | awk -F : '{print $3}')
       if [[ $limits == "" ]]; then
         printf "%-${espacio}s%s\n" $user "Desconocido :/"
       else
         #printf "%-${espacio}s %-${espacio}d %-${espacio}s %s \n" $user $max_logins $(date -d $date +"%d/%m/%Y") $(date -d $hour +"%H:%M")
-        printf "%-${espacio}s %-${espacio}d%-s %-s\n" $user $max_logins $(date +"%d/%m/%Y %H:%M" -d $datetime)
+        printf "%-${espacio}s %-${espacio}d%-s %-s\n" $user $max_logins $(date +"%d/%m/%Y %H:%M" -d "$datetime")
         # date -d 20200819T2052 +"%Y/%m/%d:%H:%M"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # date -d 20200819T2052 +"%d/%m/%Y %H:%M"
 
@@ -229,6 +349,15 @@ function delUser() {
   if [[ $(userExist $1) ]]; then
     userdel -f $1 &>/dev/null && echo "Eliminé a $1" &&
     sed -i "/$1/d" /root/ArgDM/limits #!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
+#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
+#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
+#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
+#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
+#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
+#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
+
+#elimina mal esa cosa
   else
     echo "O-Oh! Parece que el usuario ya no existe!"
   fi
@@ -309,7 +438,7 @@ function editUserForm() {
   echo -n "Nueva contraseña: "; read pass
   echo -n "Duración: "; read days
   echo -n "Límite de conexiones: "; read max_logins
-  editUser $1 $pass $days $max_logins
+  editUser $1 $pass $max_logins $days
 
 
   holder
@@ -320,7 +449,7 @@ function editUser() {
   #Validación pendiente del comando!!!
   if [[ !$(userExist $1) ]]; then
     setPwd $1 $2
-    setLimits $1 $4 $3 # $name $maxLogins $days $hours $minutes
+    setLimits $1 $3 $4 # $name $maxLogins $days $hours $minutes
   else
     echo "Ops! No pude encontrar a $1."
     echo "Si estás seguro de que "$1" está registrado, por favor comunicate"

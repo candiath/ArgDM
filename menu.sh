@@ -14,83 +14,29 @@ barra="========================================"
 
 
 function tempUser {
-	arr=( [1]='Nombre de usuario: ' [2]="Clave: " [3]="Duración (días): " [4]="Límite de conexiones: " [5]= "IP: " [6]= "Fecha de expiración: ")
-	echo -n ${arr[1]}
-	read name
-	if [ $(userExist $name) == "0" ] ; then
-		# echo -n ${arr[2]}
-		# read pass
-		# Contrasenia por defecto: 1234
-		echo "Duración: "
-		echo "Ejemplo: 1h 30m para una hora y treinta minutos."
-		echo "Si se deja en blanco se asignará media hora"
-		echo "Si sólo ingresás números los tomaré como minutos"
-		echo "Ingresá la duración del usuario: "
-		#function customTime() {
-		  unset number
-		  unset hours
-		  unset minutes
-		  read -p 'Ingresá la duración del usuario: '
-		  cadena=$REPLY
 
-		for (( i = 0; i < ${#cadena}; i++ )); do
-		    char=$(echo ${cadena:$i:1})
-		    echo "i = $i"
-		    echo "char = $char"
-		    if [[ $char =~ ^[0-9]+$ ]]; then
-		      number="${number}$char"
-		      echo "number tiene $number"
-		    elif [[ $char == "h" ]]; then
-		      hours=$number
-		      echo "hours tiene $hours"
-		      unset number
-		    elif [[ $char == "m" ]]; then
-		      minutes=$number
-		      echo "minutes tiene $minutes"
-		      unset number
-		    fi
-		done
+	defaultMagnitude=3
+	isTest=1
+	# 1 for days
+	# 2 for hours
+	# 3 for minutes
 
-		if [[ ! -z $number ]]; then
-		  minutes=$number
-		  echo "$hours horas y $minutes minutos."
-		else
-		  echo "$hours horas y $minutes minutos."
-		fi
-		#} 
-for (( i = 0; i < 1000; i++ )); do
-	if [[ 20200817 -lt 5 ]]; then
-		
-	fi
-done
+	#arr=( [1]='Nombre de usuario: ' [2]="Clave: " [3]="Duración (días): " [4]="Límite de conexiones: " [5]= "IP: " [6]= "Fecha de expiración: ")
+	#echo -n ${arr[1]}
+	read -e -p "Nombre de usuario:" -i "test" name
+	#read name
+	if [[ $(userExist $name) == "0" ]]; then
+		read -e -p "Contraseña:" -i "1234" pass
+		readLimits $name $pass 3 $isTest
 
-	echo -n ${arr[3]}
-	read days
-	if [ $days = "" ] ; then
-		$days=30
-		echo "Duración establecida en 30 minutos por defecto"
-		sleep 2s
-	fi
-
-	CreateUser $name $pass $days
+	# createUser $name $pass $max_logins $days $hours $minutes
 	else
 		echo "El usuario ya existe"
+		holder
 	fi
 }
 
 
-# function dropUser {
-# 	back=userView
-# 	arr=( [1]='Nombre de usuario: ' [2]="Clave: " [3]="Duración (días): " [4]="Límite de conexiones: " [5]= "IP: " [6]= "Fecha de expiración: ")
-# 	echo -n ${arr[1]}
-# 	read name
-# 	if [ !$(grep $name /etc/passwd) ] ; then
-# 		DeleteUser $name && echo "Usuario eliminado" &&
-# 		sed -i "s/$name:.*/$name:0/" /root/ArgDM/limits &&
-# 		sleep 2s || echo -e "ERROR FATAL!\n Saliendo..." && sleep 3s && exit
-# 	fi
-# }
-# DeleteUser COMMIT
 function DeleteUser {
 	name=$1
 	userdel --force $name
@@ -106,22 +52,17 @@ function newUserForm {
 	if (( $(userExist $name) == 0 )); then
 		echo -n ${arr[2]}
 		read pass
-		echo -n ${arr[3]}
-		read days
-		echo -n ${arr[4]}
-		read max_logins
-		createUser $name $pass $days $max_logins
+		# echo -n ${arr[3]}
+		# read days
+		# echo -n ${arr[4]}
+		# read max_logins
+		readLimits $name $pass 1 0 #$name $pass $defaultMagnitude y $isTest
 	else
 		echo "EL USUARIO YA EXISTE"
 		echo -n "Presioná ENTER para volver a intentarlo"
 		holder
 	fi
 
-
-	#createUser $name
-	#setPwd $name $pass
-	#setDays $name $days
-	#setLogins $max_logins
 
 }
 function create_user {
