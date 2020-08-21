@@ -27,7 +27,12 @@ function tempUser {
 	#read name
 	if [[ $(userExist $name) == "0" ]]; then
 		read -e -p "Contraseña:" -i "1234" pass
-		readLimits $name $pass 3 $isTest
+		while [[ ${#pass} -lt 4 ]]; do
+	      echo "La contraseña es demasiado corta!"
+	      echo -n "Por favor, ingresá al menos 4 caracteres:"
+	      read pass
+    	done
+		readLimits $name $pass 3 $isTest 1
 
 	# createUser $name $pass $max_logins $days $hours $minutes
 	else
@@ -52,11 +57,16 @@ function newUserForm {
 	if (( $(userExist $name) == 0 )); then
 		echo -n ${arr[2]}
 		read pass
+		while [[ ${#pass} -lt 4 ]]; do
+	      echo "La contraseña es demasiado corta!"
+	      echo -n "Por favor, ingresá al menos 4 caracteres:"
+	      read pass
+    	done
 		# echo -n ${arr[3]}
 		# read days
 		# echo -n ${arr[4]}
 		# read max_logins
-		readLimits $name $pass 1 0 #$name $pass $defaultMagnitude y $isTest
+		readLimits $name $pass 1 0 1 #$name $pass $defaultMagnitude $isTest $nextSteep
 	else
 		echo "EL USUARIO YA EXISTE"
 		echo -n "Presioná ENTER para volver a intentarlo"
@@ -202,7 +212,7 @@ function userView() {
 	echo -e "[6] Listar usuarios conectados"
 	#echo -e "[7] Iniciar limitador de conexiones!"
 	#	echo -e "[8]"
-	#	echo -e "[9]"
+	echo -e "[9] Eliminar \e[31mTODOS\e[39m los usuarios vencidos"
 	#	echo -e "[10]"
 	echo -e "[0] Atrás"
 	echo -n "Elegí una opción: "
@@ -228,8 +238,8 @@ function userView() {
 		6 )
 		listarOnlines 1
 		;;
-		7 )
-		listarOnlines
+		9 )
+		delUsersExpired
 		;;
 		0 )
 		clear

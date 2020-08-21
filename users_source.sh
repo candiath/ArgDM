@@ -10,8 +10,10 @@
 
 # Esta función recibe $name $pass $defaultMagnitude y $isTest y  se encarga de pedir los límites tanto de logins máximos como de tiempo
 # y los envía a createUser()
-function readLimits() {
-   
+function readLimits() { # $name $pass $defaultMagnitude $isTest $nextSteep
+echo "readLimits ++> He recibido "$# " parámetros, que son: "$*
+   isTest=$4
+   nextSteep=$5
     #echo "Duración: "
     validity=0
     number=0
@@ -52,7 +54,6 @@ function readLimits() {
       done
 
       if [[ $number -gt 0 ]]; then
-        echo "number tiene $number"
         case $3 in
           1 )
           days=$number #; validity=1
@@ -66,40 +67,37 @@ function readLimits() {
         esac
       fi
 
-# echo "CHECK $days days, $hours horas y $minutes minutos."
 
-      # echo "No se ha ingresado una entrada válida."
-      # echo "Por favor, ingrese en el formato dias horas minutos"
-      # echo "Ejemplo: 1d 5h 15m"
-      # holder
-      # clear
-
-
-    #done
-    # Establezco entrada sin letras como minutos
-    # if [[ ! -z $number ]]; then
-    #   minutes=$number
-    #   echo "$days days, $hours horas y $minutes minutos."
-    # else
-    #   echo "$days days, $hours horas y $minutes minutos."
-    # fi
-    #} 
+    read -e -p "Limite de conexiones:" -i "1" max_logins
+      case $nextSteep in
+        1 )
+        createUser $1 $2 $max_logins $days $hours $minutes $isTest
+        ;;
+        2 ) 
+        editUser $1 $2 $max_logins $days $hours $minutes $isTest
+        ;; # $name $pass $maxLogins $days $hours $minutes $isTest
+      esac
 
 
-  # if [ $days = "" ] ; then
-  #   $days=30
-  #   echo "Duración establecida en 30 minutos por defecto"
-  #   sleep 2s
-  # fi
-  #days=0
   # max_logins=1
-  read -e -p "Limite de conexiones:" -i "1" max_logins
-  createUser $name $pass $max_logins $days $hours $minutes $isTest
   # else
   #   echo "El usuario ya existe"
   # fi
 }
 
+function showUserData() { # $name $pass
+clear
+  echo "IP: $(hostname -I)"
+  echo "Nombre: $name"
+  echo "Contraseña: $pass"
+  local limits=$(getLimits $name)
+  maxLogins=$(echo $limits | awk -F : '{print $1}')
+  echo "Límite: $maxLogins"
+  local datetime=$(echo $limits | awk -F : '{print $2}')
+  datetime=$(echo "${datetime:0:8} ${datetime:8:4}")
+  local expDate=$(date -d "$datetime" +"%d/%m/%Y %H:%M")
+  echo "Fecha de expiración: $expDate"
+}
 
 
 #ENTRADA desde tempUser: $name $pass $max_logins $days $hours $minutes $isTest
@@ -110,17 +108,15 @@ function createUser() {
   if [[ $(userExist $1) == "0" ]]; then
     useradd -M -s /bin/false $1
     setPwd $1 $2
-    #ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
-#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
-#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
-#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
-#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
-#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
-#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
-
-# VALIDAR PASS NO VACÍA PORQUE ROMPE EL RESTO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Y no es seguro
 
     # $name $maxLogins $days $hours $minutes $isTest
+    # echo "Name: $1"
+    # echo "Pass: $2"
+    # echo "maxLogins: $3"
+    # echo "days: $4"
+    # echo "hours: $5"
+    # echo "minutes: $6"
+    # echo "isTest: $7"
     setLimits $1 $3 $4 $5 $6 $7
   else
     echo "Ya existe un usuario con el nombre $1"
@@ -173,33 +169,44 @@ function setLimits() { # $name $maxLogins $days $hours $minutes $isTest
     #date  +"%Y%m%d%H%M" -d "+ $days days $hours hours $minutes minutes"
   fi
 
+  showUserData
+
   holder
 
 
 }
 
+
 function getLimits() { # max_logins:fecha_expiración
   # echo $(grep $1 /root/ArgDM/limits | awk -F : '{print $2":"$3":"$4}')
-  echo $(grep $1 /root/ArgDM/limits | awk -F : '{print $2":"$3}')
+  # echo $(grep $1 /root/ArgDM/limits | awk -F : '{print $2":"$3}')
+
+  for line in $(cat /root/ArgDM/limits); do
+    if [[ $(echo $line | awk -F : '{print $1}' ) == "$1" ]]; then
+      echo $(echo $line | awk -F : '{print $2":"$3}')
+    fi
+  done
 }
+
+
 
 # function setLogins() {
   
-#   # $1 = name
-#   # $2 = limit
+  # $1 = name
+  # $2 = limit
   
-#     # Active logins:
-#         # ps -u $usur |grep sshd |wc -l
-#         #
-#         # Logout ssh users (no dropbear)
-#         # pkill -KILL -u pepe
+    # Active logins:
+        # ps -u $usur |grep sshd |wc -l
+        #
+        # Logout ssh users (no dropbear)
+        # pkill -KILL -u pepe
 
-#         ################################################
-#         # Separador para formar columnas alineadas
-#         # espacio=30
-#         # printf "%-${espacio}s%s" uno dos
-#         # uno                           dosroot@VPS16:~#
-#         ################################################
+        ################################################
+        # Separador para formar columnas alineadas
+        # espacio=30
+        # printf "%-${espacio}s%s" uno dos
+        # uno                           dosroot@VPS16:~#
+        ################################################
 # }
 
 function getLogins() {
@@ -220,6 +227,10 @@ function getSystemUserList() {
   done
 }
 
+
+
+
+
 function userListForm() {
   if [[ $(getSystemUserList | wc -l) -gt 0 ]]; then
     espacio=15
@@ -235,22 +246,35 @@ function userListForm() {
       # limits=max_logins:DATETIME
       local max_logins=$(echo $limits | awk -F : '{print $1}')
       local datetime=$(echo $limits | awk -F : '{print $2}')
-      datetime=$(echo "${datetime:0:8} ${datetime:8:4}")
-      #echo "datetime es \"$datetime\""
+      # datetime=$(echo $limits | awk -F : '{print $2}')
+      # echo "datetime: \"$datetime\""
+      
+      now=$(date +"%Y%m%d%H%M")
+      # echo "now: $now"
+            
+      if [[ $datetime -gt $now ]]; then
+        datetime=$(echo "${datetime:0:8} ${datetime:8:4}")
+        timeLeft=$(getTimeLeft "$datetime")
+        
+      else
+        timeLeft="VENCIDO"
+        start="\e[31m"
+        end="\e[39m"
+      fi
 
-      # local hour=$(echo $limits | awk -F : '{print $3}')
+      if [[ ${#datetime} == 12 ]]; then
+        datetime=$(echo "${datetime:0:8} ${datetime:8:4}")
+      fi
+
       if [[ $limits == "" ]]; then
         printf "%-${espacio}s%s\n" $user "Desconocido :/"
       else
-        #printf "%-${espacio}s %-${espacio}d %-${espacio}s %s \n" $user $max_logins $(date -d $date +"%d/%m/%Y") $(date -d $hour +"%H:%M")
-        printf "%-${espacio}s %-${espacio}d%-s %-s\n" $user $max_logins $(date +"%d/%m/%Y %H:%M" -d "$datetime")
-        # date -d 20200819T2052 +"%Y/%m/%d:%H:%M"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # date -d 20200819T2052 +"%d/%m/%Y %H:%M"
-
-
-        #date +"%d/%m/%Y %H:%M" -d $(echo "${str:0:8}T${str:8:4}")
-
-
+        #printf "%-${espacio}s %-${espacio}d%-s %-s %-s\n" $user $max_logins $(date +"%d/%m/%Y %H:%M" -d "$datetime") "($(getTimeLeft "$datetime"))"
+        # printf "%-${espacio}s %-${espacio}d%-s %-s %-s\n" $user $max_logins $(date +"%d/%m/%Y %H:%M" -d "$datetime") "($(getTimeLeft "$datetime")) $end"
+        printf "${start}%-${espacio}s %-${espacio}d%-s %-s%-s" $user $max_logins $(date +"%d/%m/%Y %H:%M" -d "$datetime") " ($timeLeft)"
+        echo -e ${end}
+        unset start
+        unset end
       fi
     done
     echo ""
@@ -262,7 +286,15 @@ function userListForm() {
     clear
 }
 
+
+
+# Recibe si eliminar o modificar usuario
+# Muestro lista de usuarios
+# Solicita elegir uno
+# Elimina o modifica según $1
+
 function printSystemUserList() {
+
   #clear
   nextSteep=$1
   if [[ $nextSteep == 1 || $nextSteep == 2 ]]; then
@@ -291,11 +323,10 @@ function printSystemUserList() {
         printSystemUserList $nextSteep
       else
         case $nextSteep in
-          1) 
-          delUser ${userlist[$user]}
-          ;;
+          1 )
+          delUser ${userlist[$user]} ;;
           2) 
-          editUserForm ${userlist[$user]}
+          editUserForm ${userlist[$user]} $nextSteep
           ;;
         esac
       fi
@@ -306,6 +337,10 @@ function printSystemUserList() {
   fi
   #holder
 }
+
+
+
+
 
 function delUserForm() {
   # CARGO ARRAY DE USUARIOS
@@ -346,19 +381,19 @@ function delUserForm() {
 }
 
 function delUser() {
-  if [[ $(userExist $1) ]]; then
-    userdel -f $1 &>/dev/null && echo "Eliminé a $1" &&
-    sed -i "/$1/d" /root/ArgDM/limits #!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
-#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
-#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
-#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
-#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
-#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
-#ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   ERROR   
+  username=$1
+  userdel -f $username &>/dev/null && echo "Eliminé a $username"
+  
+  for line in $(cat /root/ArgDM/limits); do
+    name=$(echo $line | awk -F : '{print $1}')
+    if [[ $username == $name ]]; then
+      # echo "line: $line"
+      # echo "username: $username"
+      sed -i "/$line/d" /root/ArgDM/limits
+    fi
+  done
 
-#elimina mal esa cosa
-  else
+  if [[ ! $(userExist $username) ]]; then
     echo "O-Oh! Parece que el usuario ya no existe!"
   fi
 }
@@ -432,24 +467,29 @@ function editUserForm() {
   #Listar Usuarios
   # Solicitar selección
   # Recuperar info del usuario
+  nextSteep=$2
 
   echo "Formulario de edición de $1"
   echo "Nombre: $1"
   echo -n "Nueva contraseña: "; read pass
-  echo -n "Duración: "; read days
-  echo -n "Límite de conexiones: "; read max_logins
-  editUser $1 $pass $max_logins $days
+  while [[ ${#pass} -lt 4 ]]; do
+    echo "La contraseña es demasiado corta!"
+    echo -n "Por favor, ingresá al menos 4 caracteres:"
+    read pass
+  done
+  #echo "salió del while"
+  test=$(isTest $1)
+  #echo "test is $test"
 
-
-  holder
+  readLimits $1 $pass 3 $test $nextSteep
 }
 
 
-function editUser() {
+function editUser() { # $name $pass $maxLogins $days $hours $minutes $isTest
   #Validación pendiente del comando!!!
   if [[ !$(userExist $1) ]]; then
     setPwd $1 $2
-    setLimits $1 $3 $4 # $name $maxLogins $days $hours $minutes
+    setLimits $1 $3 $4 # $name $maxLogins $days $hours $minutes $isTest
   else
     echo "Ops! No pude encontrar a $1."
     echo "Si estás seguro de que "$1" está registrado, por favor comunicate"
@@ -477,35 +517,66 @@ function userLockStatus() {
 }
 
 
-# function customTime() {
-#   unset number
-#   unset hours
-#   unset minutes
-#   read -p 'ingrese el tiempo: '
-#   cadena=$REPLY
+#RECIBE tiempo objetivo
+function getTimeLeft() { 
+  epochNOW=$(date "+%s")
+  epochDATE=$(date "+%s" -d "$1")
+  epochDiff=$(( $epochDATE - $epochNOW))
+  timeRemaining=$(( $epochDiff % 86400 ))
+  epochDiff=$(( $epochDiff - $timeRemaining ))
+  daysRemaining=$(( $epochDiff / 86400 ))
+  minutesRemaining=$(( $timeRemaining % 3600 ))
+  timeRemaining=$(( $timeRemaining - $minutesRemaining ))
+  hoursRemaining=$(( $timeRemaining / 3600 ))
+  timeRemaining=$minutesRemaining
+  secondsRemaining=$(( $timeRemaining % 60 ))
+  timeRemaining=$(( $timeRemaining - $secondsRemaining ))
+  minutesRemaining=$(( $timeRemaining / 60 ))
+  echo "$daysRemaining días, $hoursRemaining:$minutesRemaining:$secondsRemaining"
+}
 
-# for (( i = 0; i < ${#cadena}; i++ )); do
-#     char=$(echo ${cadena:$i:1})
-#     echo "i = $i"
-#     echo "char = $char"
-#     if [[ $char =~ ^[0-9]+$ ]]; then
-#       number="${number}$char"
-#       echo "number tiene $number"
-#     elif [[ $char == "h" ]]; then
-#       hours=$number
-#       echo "hours tiene $hours"
-#       unset number
-#     elif [[ $char == "m" ]]; then
-#       minutes=$number
-#       echo "minutes tiene $minutes"
-#       unset number
-#     fi
-# done
 
-# if [[ ! -z $number ]]; then
-#   minutes=$number
-#   echo "$hours horas y $minutes minutos."
-# else
-#   echo "$hours horas y $minutes minutos."
-# fi
-# } 
+
+# Recibe un nombre de usuario y devuelve 1 si es usuario de prueba, sinó, devuelve 0
+function isTest() {
+  if [[ $(echo $(grep $1 /root/ArgDM/limits | awk -F : '{print $4}')) == "1" ]]; then
+    echo "1"
+  else
+    echo "0"
+  fi
+  
+}
+
+
+function delUsersExpired() {
+  clear
+  echo -e "\e[31m!!!!!!!!!!!!!!! ADVERTENCIA !!!!!!!!!!!!!!!\e[39m"
+  echo -e "Esta función eliminará a \e[31mTODOS\e[39m los usuarios \e[31mVENCIDOS\e[39m"
+  echo -e "\e[32mLos usuarios vigentes no se verán afectados\e[39m"
+  read -e -p "Estás seguro de que deseas continuar? (S/N): " -i "" reply
+if [[ $reply == "S" || $reply == "s" ]]; then
+  count=0
+  for user in $(getSystemUserList); do
+    limits=$(getLimits $user)
+    local datetime=$(echo $limits | awk -F : '{print $2}')
+    if [[ $datetime -le $now ]]; then
+      count=$(($count + 1))
+      delUser $user
+    fi
+  done
+elif [[ $reply == "N" || $reply == "n" ]]; then
+  echo "Cancelando.."
+  sleep 1s
+else
+  echo "\"$reply\" no es una entrada válida."
+  echo "Ingresá sólo S ó N"
+fi
+
+if [[ $count == 0 ]]; then
+  echo "No existe ningún usuario vencido"
+else
+  echo "Se han eliminado $count usuarios"
+fi
+
+holder
+}
