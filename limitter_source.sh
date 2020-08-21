@@ -46,26 +46,6 @@ function getLimitterStatus() {
 
 
 
-
-function sshdLimitter() {
-  # while [[ : ]]; do
-    # sleep 1s
-
-   
-  # done
-}
-
-
-
-
-
-
-
-
-
-
-
-
 function Tl() {
   echo "limiter funciona"
   sleep 1s

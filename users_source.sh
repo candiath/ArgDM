@@ -413,6 +413,16 @@ function listarOnlines() {
           fi
   done
   done
+
+  # SUMO USUARIOS SSHD
+    for item in $(getSystemUserList); do
+      actualLogins=$(ps -u $item | grep sshd | wc -l)
+      #echo "actualLogins $item = $actualLogins"
+      # allowedLogins=$(getLogins $item)
+      if [[ $actualLogins -gt 0 ]]; then 
+        [ -n "${connections[$item]}" ] && connections[$item]=$((${connections[$item]} + $actualLogins)) || connections[$item]=$actualLogins
+      fi
+    done
   #echo "Check ==> He recibido "$# " parámetros, que son: "$*
   case $1 in
           1 )
@@ -509,7 +519,7 @@ function Tu() {
 
 
 function getDate() { # AñoMesDiaHoraMinuto
-  echo "$(grep "\b$1:" /root/ArgDM/limits | awk -F : '{print $3$4$5}')"
+  echo "$(grep "\b$1:" /root/ArgDM/limits | awk -F : '{print $3}')"
 }
 
 function userLockStatus() {

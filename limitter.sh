@@ -1,5 +1,5 @@
 #!/bin/bash
-
+source ./users_source.sh
 dir=/root/ArgDM
 while [[ true ]]; do
     declare -a PIDs
@@ -8,6 +8,7 @@ while [[ true ]]; do
     cat /dev/null > /tmp/monitor
     for PID in "${PIDs[@]}" # Por cada proceso de DropBear
     do
+      echo "pid $PID"
       temp=$(cat /var/log/auth.log | grep "Password auth succeeded" | grep "dropbear\[$PID\]")
       echo $temp >> /tmp/monitor
       activeConnections=$(echo $temp | awk -F"'" '{print $2}')
@@ -17,9 +18,20 @@ while [[ true ]]; do
       for item in ${activeConnections}; do
           if [[ -n "$item"  ]]; then #Verificar si es necesario este paso!!!!!!!!!!!!!!!!
                   #echo "en if ITEM vale $item"
+                  echo "$item está conectado"
                   [ -n "${connections[$item]}" ] && connections[$item]=$((${connections[$item]} + 1)) || connections[$item]=1
           fi
       done
+    done
+
+    # SUMO USUARIOS SSHD
+    for item in $(getSystemUserList); do
+      actualLogins=$(ps -u $item | grep sshd | wc -l)
+      echo "actualLogins $item = $actualLogins"
+      # allowedLogins=$(getLogins $item)
+      if [[ $actualLogins -gt 0 ]]; then 
+        [ -n "${connections[$item]}" ] && connections[$item]=$((${connections[$item]} + $actualLogins)) || connections[$item]=$actualLogins
+      fi
     done
 
   # Leo limites
@@ -40,10 +52,11 @@ while [[ true ]]; do
         # Parece que sin los dobles corchetes se hace la comparación caracter a caracter
         # porque según esto 2 es mayor que 10
           echo "$user excede limite!!!!!!!!!!!!!!!!!!!!!!"
-          echo "${connections[$user]} -gt ${loginLimits[$user]}"
+          pkill -KILL -u $user
+          #echo "${connections[$user]} -gt ${loginLimits[$user]}"
           for item in $(grep $user /tmp/monitor | awk -F '[][]' '{print $2}') # por cada conexion del usuario
           do
-            echo "MUERE a $item     =================================="
+            #echo "MUERE a $item     =================================="
             process=$(echo $item) # Mato la conexión
             kill $process 2> "$errDir/kill \"$process\" $(date +"%F--%T")"
           done
